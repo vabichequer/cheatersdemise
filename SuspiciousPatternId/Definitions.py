@@ -5,6 +5,7 @@ import scipy.spatial.distance as ssd
 import matplotlib.pyplot as plt
 import collections as coll
 import matplotlib as mpl
+import networkx as nx
 import seaborn as sns
 import pandas as pd
 import sympy as sym
@@ -60,31 +61,6 @@ def readDataFile(filename):
     df = pd.DataFrame.from_dict(listJson, orient='columns');
     return df
 
-## faster, but still slow
-## fast subtractive convolutional algorithm? Nope. Not a convolution, as it would not need to get inverted
-## Mathematical deduction on my scrapbook
-#def selectUsers(selected_users, tol, exercise_array_1, exercise_array_2, version, N_USERS):
-#    for i in range(0, N_USERS - 1):
-#        for j in range(i + 1, N_USERS):
-#            time_dif = exercise_array_1[i] - exercise_array_2[j]
-#            if (version == 'XC'):
-#                time_dif = time_dif[time_dif <= 0]
-#            elif (version == 'CX'):
-#                time_dif = time_dif[time_dif >= 0]
-#            nbr_exercises = sum(abs(x) < tol for x in time_dif)
-#            if (nbr_exercises >= 10):
-#                print(version, 'added.', i, 'is user 1,', j, 'is user 2.', nbr_exercises, 'exercises.', tol, 'minutes tolerance')
-#                selected_users.append([i, j])
-#            
-#        if(i  == int(N_USERS / 4)):
-#            print(version, '25% done')
-#        elif(i  == int(N_USERS / 2)):
-#            print(version, '50% done')
-#        elif(i  == int(N_USERS / (4/3))):
-#            print(version, '75% done') 
-#    print(version, 'thread finished.', version, 'added', len(selected_users), 'users.')
-#    return
-
 # sort functions
 def take_second(elem):
     return elem[1]
@@ -101,6 +77,7 @@ def generate_pairs(data_array, user_id_data, scores_data, trimming, label, plot)
     fig = plt.figure()
     
     user_pairs = []
+    string_dump = []
     
     user_score_difference = []
     
@@ -135,15 +112,18 @@ def generate_pairs(data_array, user_id_data, scores_data, trimming, label, plot)
             ax.set_title('User ' + str(user_1) + ' (' + str(user1_id) +': ' + str(score1) + ') vs User ' +
                           str(user_2) + ' (' + str(user2_id) +': ' + str(score2) + ')' + ' || Distance: '
                          + str(data_array[i][2]), fontsize=13)
+            
+            string_dump.append(str('User ' + str(user_1) + ' (' + str(user1_id) +': ' + str(score1) + ') vs User ' +
+                          str(user_2) + ' (' + str(user2_id) +': ' + str(score2) + ')' + ' || Distance: '
+                         + str(data_array[i][2])))
+            
             ax.set_xlabel('Time (minutes)')
             ax.set_ylabel('Number of occurences')
             ax.hist([arrays[0], arrays[1], arrays[2], arrays[3]], color=['blue', 'orange', 'green', 'red'],
                     label=label, bins=100, stacked=True)            
             ax.legend()
-
-        clear()
-        print(math.ceil(i*100/len(data_array)), '% done')
-    return user_pairs, user_score_difference, fig
+            
+    return user_pairs, user_score_difference, fig, string_dump
 
 def get_number_of_exercises(data, tol):
     #nbr_exercises_over = sum(((x >= 0) and (x < tol)) for x in data)
@@ -251,30 +231,9 @@ def type_separation(all_user_pairs, all_time_differences, tol):
 #            print('\t Nbr exercises:', total_ex, 'Over:', total_over, 'Under:', total_under)
 #            print('\t Distance:', distance)
     
-    print('Rearranging...')
     type_array.sort(key=take_third)
-        
-    print("Analysis finished.")
     
     return type_array
-
-## As the time differences are calculated, when a nan comes up, the result is always nan. Therefore, if a user
-## did the exercise and the other don't, no matter the time the one who did has, it will be a nan, because
-## the one who didn't do the exercise will have a nan.
-#def computeTimeDifferences(time_difference, selected_users, exercise_array_1, exercise_array_2, version, N_EXERCISES):
-#    time_diff_temp = []
-#    for i in range(0, len(selected_users)):
-#        td_temp = []
-#        j = selected_users[i][0]
-#        k = selected_users[i][1]
-#        
-#        for l in range(0, N_EXERCISES):
-#            td_temp.append(exercise_array_1[j][l] - exercise_array_2[k][l])
-#        
-#        time_diff_temp.append(td_temp)
-#    
-#    time_difference.put([time_diff_temp, version])
-#    print(version, 'finished.')
 
 def computeMetrics(tol, time_difference):
     avg_dist = np.empty((len(time_difference), len(time_difference)))
@@ -374,9 +333,7 @@ def check_ip_addresses(users, df):
                             unique_ex_2.append(df_ip.Eventos[j][k]['id_problema'])
      
         ip_addrs.append([temp_1, temp_2, count_1, count_2])
-        
-        clear()
-        print(math.ceil(i*100/len(users)), '% done')
+
     return ip_addrs
 
 def check_interactions(users, df):

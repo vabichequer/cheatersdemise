@@ -220,8 +220,8 @@ if __name__ == '__main__':
             if (selected_users_XX[n][1] not in users_in_common):
                 users_in_common.append(selected_users_XX[n][1])
                     
-        print('\t Result size:', len(users_in_common))
-        print('\t Result data:', users_in_common)
+        #print('\t Result size:', len(users_in_common))
+        #print('\t Result data:', users_in_common)
 
         label = []
         all_selected_users = []
@@ -242,22 +242,27 @@ if __name__ == '__main__':
             temp_users.pop(z)
             temp_td.pop(z)
 
-        print(label)
-        print(label[0], len(all_selected_users[0]), '||', len(selected_users_CC))
-        print(label[1], len(all_selected_users[1]), '||', len(selected_users_XC))
-        print(label[2], len(all_selected_users[2]), '||', len(selected_users_CX))
-        print(label[3], len(all_selected_users[3]), '||', len(selected_users_XX))
+        #print(label)
+        #print(label[0], len(all_selected_users[0]), '||', len(selected_users_CC))
+        #print(label[1], len(all_selected_users[1]), '||', len(selected_users_XC))
+        #print(label[2], len(all_selected_users[2]), '||', len(selected_users_CX))
+        #print(label[3], len(all_selected_users[3]), '||', len(selected_users_XX))
 
         type_array = type_separation(all_selected_users, all_time_differences, tol)
 
-        user_pairs, user_score_difference, fig = generate_pairs(type_array, df.Usuario, scores, trimming, label, plot=False)
+        user_pairs, user_score_difference, fig, string_dump = generate_pairs(type_array, df.Usuario, scores, trimming, label, plot=True)
 
-        print('Plotting', len(user_pairs), 'pairs consisted of', len(users_in_common), 'users')
+        with open('distance_dump.txt', 'w') as filehandle:
+            json.dump(string_dump, filehandle)
+            
+        #print('Plotting', len(user_pairs), 'pairs consisted of', len(users_in_common), 'users')
         #fig.set_size_inches(20, len(fig.axes) * 6)
         #plt.savefig(str(tol) + '/' + str(trimming) + '-distance.png')
         #print('Figure saved.')
         #plt.show()
-
+        
+        plt.close()
+        
         # ## Distance matrix
 
         matrix_size = len(users_in_common)
@@ -272,8 +277,6 @@ if __name__ == '__main__':
                     if (type_array[k][0][0] == user_1 and type_array[k][0][1] == user_2):
                         distance_matrix[i][j] = type_array[k][2]
                         distance_matrix[j][i] = type_array[k][2]
-            clear()
-            print( math.ceil(i*100/matrix_size), '% done (1)')
             
         distance_matrix = abs(distance_matrix)
 
@@ -281,8 +284,6 @@ if __name__ == '__main__':
             for j in range(0, matrix_size):
                 if (i == j):
                     distance_matrix[i][j] = 0
-            clear()
-            print( math.ceil(i*100/matrix_size), '% done (2)')
                     
         distance_matrix[np.isnan(distance_matrix)] = 1
                         
@@ -296,7 +297,7 @@ if __name__ == '__main__':
 
         plt.figure(figsize=(60, 28))  
 
-        print(np.shape(distance_matrix))
+        #print(np.shape(distance_matrix))
 
         square = ssd.squareform(distance_matrix)
 
@@ -313,6 +314,8 @@ if __name__ == '__main__':
         plt.savefig(str(tol) + '/' + str(trimming) + '-dendrogram.png')
 
         #plt.show()
+        
+        plt.close()
 
         type_array = type_separation(all_selected_users, all_time_differences, tol)
 
@@ -369,7 +372,8 @@ if __name__ == '__main__':
 
         #plt.show()
 
-
+        plt.close()
+        
         # ## Distance from optimal curve (X^9)
 
         plt.figure(figsize=(10, 7))
@@ -410,6 +414,8 @@ if __name__ == '__main__':
         plt.savefig(str(tol) + '/' + str(trimming) + '-distance_from_curve.png')
 
         #plt.show()
+
+        plt.close()
 
         first = []
         second = []
@@ -468,10 +474,17 @@ if __name__ == '__main__':
 
         #plt.show()
 
+        plt.close()
 
-        # Checking outliers
+        # Checking outliers or normal_points
 
-        array_being_analysed = outliers
+        FLAG = 'outliers'
+
+        if (FLAG == 'outliers'):
+            array_being_analysed = outliers
+        else:
+            array_being_analysed = normal_points
+            
 
         ip_addrs = check_ip_addresses(array_being_analysed, df)
 
@@ -515,11 +528,14 @@ if __name__ == '__main__':
 
         plt.grid(color='grey', linestyle='--', linewidth=.5)
 
-        plt.savefig(str(tol) + '/' + str(trimming) + '-exercises_same_ip.png')
+        plt.savefig(str(tol) + '/' + str(trimming) + '-exercises_same_ip-' + FLAG + '.png')
 
         #plt.show()
+        
+        plt.close()
 
         # Material interaction index
+        #
         # By counting the number of events a user has, it can measure how many of them were directed towards reading the
         # materials. This is done by dividing the count of all the events by the count of the events where the user
         # tried to solve an exercise. However, since a user can try the same exercise multiple times, it was decided
@@ -544,8 +560,14 @@ if __name__ == '__main__':
         
         scatter = plt.scatter(array_being_analysed[:, 0], array_being_analysed[:, 1], edgecolors = 'black', cmap='binary')
 
+        interaction_dump = []
+
         for i, txt in enumerate(interactions_str):
             plt.annotate((txt, (array_being_analysed[i, 2], array_being_analysed[i, 3])), (array_being_analysed[i, 0], array_being_analysed[i, 1]))
+            interaction_dump.append('User: ' + str(array_being_analysed[i, 2]) + ' User: ' + str(array_being_analysed[i, 3]) + ' ' + txt)
+
+        with open('interaction_dump-' + FLAG + '.txt', 'w') as filehandle:
+            json.dump(interaction_dump, filehandle)
 
         x = np.linspace(-1, 1, 201)
         y = [pow(i, 9) for i in x]
@@ -557,10 +579,47 @@ if __name__ == '__main__':
 
         plt.grid(color='grey', linestyle='--', linewidth=.5)
 
-        plt.savefig(str(tol) + '/' + str(trimming) + '-interaction_index.png')
+        plt.savefig(str(tol) + '/' + str(trimming) + '-interaction_index-' + FLAG + '.png')
 
         #plt.show()
         
+        plt.close()
+        
+        # Create a connection graph
+        
+        #distance_array = np.reshape(type_array[:, 2], (-1, 1))
+        
+        print("Started drawing connection graph...")
+        
+        G = nx.DiGraph()
+        
+        labels = {}
+        
+        distance_array = analysing_data[:, 0]
+        
+        for i in range(0, len(user_pairs_copy)):
+            G.add_node(user_pairs_copy[i][0])
+            G.add_node(user_pairs_copy[i][1])
+            if (distance_array[i] >= 0):
+                G.add_edge(user_pairs_copy[i][0], user_pairs_copy[i][1])
+                labels[user_pairs_copy[i][0], user_pairs_copy[i][1]] = round(distance_array[i], 2)
+            else:
+                G.add_edge(user_pairs_copy[i][1], user_pairs_copy[i][0])
+                labels[user_pairs_copy[i][1], user_pairs_copy[i][0]] = round(distance_array[i], 2)
+                
+         
+        pos = nx.nx_agraph.graphviz_layout(G, prog='dot', args="-Gnodesep=5")
+            
+        nx.draw(G, pos, with_labels = True)
+        
+        nx.draw_networkx_edge_labels(G, pos, labels, font_color='red')
+        
+        # Write the graph to a DOT file, which can be opened in Graphviz
+        
+        nx.nx_agraph.write_dot(G, "C:/Users/Vicenzo Abichequer/Documents/cheatersdemise/SuspiciousPatternId/2/dot_graph.dot")
+        
+        plt.show()  
+        
+        print("Program finish.")
         
     main()
-

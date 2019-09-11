@@ -587,38 +587,116 @@ if __name__ == '__main__':
         
         # Create a connection graph
         
-        #distance_array = np.reshape(type_array[:, 2], (-1, 1))
+        ip_addrs_list = []
         
+        ip_addrs_list.append(check_ip_addresses(normal_points, df))
+        ip_addrs_list.append(check_ip_addresses(outliers, df))
+
+        temp = []
+        
+        labels_ip_both = []
+
+        for h in range(0, 2):
+            ip_addrs = ip_addrs_list[h]
+            for i in range(0, len(ip_addrs)):
+                user_1_ips = ip_addrs[i][0]
+                user_2_ips = ip_addrs[i][1]
+                count_1 = ip_addrs[i][2]
+                count_2 = ip_addrs[i][3]
+                amount = 0
+                for j in range(0, len(user_1_ips)):
+                    for k in range(0, len(user_2_ips)):
+                        if ((user_1_ips[j] == user_2_ips[k]) == True):
+                            amount = amount + min(count_1[j], count_2[k])
+                #print('User 1 (', array_being_analysed[i][2], ',', len(user_1_ips), '): ', user_1_ips, count_1)
+                #print('User 2 (', array_being_analysed[i][3], ',', len(user_2_ips), '): ', user_2_ips, count_2)
+                #print('\nCorrelation: ', amount, np.intersect1d(user_1_ips, user_2_ips, assume_unique=True))
+                temp.append('/' + str(len(user_1_ips)) + '/' + str(len(user_2_ips)) + '/' + str(len(np.intersect1d(user_1_ips, user_2_ips, assume_unique=True))))
+            labels_ip_both.append(temp)
+ 
         print("Started drawing connection graph...")
         
         G = nx.DiGraph()
         
-        labels = {}
-        
         distance_array = analysing_data[:, 0]
         
-        for i in range(0, len(user_pairs_copy)):
-            G.add_node(user_pairs_copy[i][0])
-            G.add_node(user_pairs_copy[i][1])
-            if (distance_array[i] >= 0):
-                G.add_edge(user_pairs_copy[i][0], user_pairs_copy[i][1])
-                labels[user_pairs_copy[i][0], user_pairs_copy[i][1]] = round(distance_array[i], 2)
-            else:
-                G.add_edge(user_pairs_copy[i][1], user_pairs_copy[i][0])
-                labels[user_pairs_copy[i][1], user_pairs_copy[i][0]] = round(distance_array[i], 2)
-                
-         
-        pos = nx.nx_agraph.graphviz_layout(G, prog='dot', args="-Gnodesep=5")
+        labels_ip = []
+        i = 0
+        
+        interactions = []
+        interactions_both = []
+        interactions_both.append(check_interactions(normal_points, df))
+        interactions_both.append(check_interactions(outliers, df))  
+        
+        while i < len(user_pairs_copy):
+            user_1 = int(user_pairs_copy[i][0])
+            user_2 = int(user_pairs_copy[i][1])
+            found = False
             
-        nx.draw(G, pos, with_labels = True)
+            for j in range(0, len(normal_points)):
+                if (user_1 == normal_points[j][2] and user_2 == normal_points[j][3]):
+                    labels_ip.append(labels_ip_both[0][j])
+                    interactions.append(interactions_both[0][j])
+                    found = True
+                    i = i + 1
+                    break
+            
+            if (not found):   
+                for k in range(0, len(outliers)):
+                    if (user_1 == outliers[k][2] and user_2 == outliers[k][3]):
+                        labels_ip.append(labels_ip_both[1][k])
+                        interactions.append(interactions_both[1][k])
+                        i = i + 1
+                        break
+        
+        node_colors = {}
+        
+        for i in range(0, len(interactions)):            
+            user_1 = int(user_pairs_copy[i][0])
+            user_2 = int(user_pairs_copy[i][1])
+            if (interactions[i][0] == 0):
+                node_colors[user_1] = 'red'
+            else:
+                node_colors[user_1] = 'blue'
+            if (interactions[i][1] == 0):
+                node_colors[user_2] = 'red'
+            else:
+                node_colors[user_2] = 'blue'
+
+        node_color_array = []
+            
+        labels = {}
+        
+        for i in range(0, len(user_pairs_copy)):
+            user_1 = int(user_pairs_copy[i][0])
+            user_2 = int(user_pairs_copy[i][1])
+            G.add_node(user_1)
+            G.add_node(user_2)
+            
+            if (distance_array[i] >= 0):
+                G.add_edge(user_1, user_2)
+                labels[user_1, user_2] = str(round(distance_array[i], 2)) + str(labels_ip[i])
+            else:
+                G.add_edge(user_2, user_1)
+                labels[user_2, user_1] = str(round(distance_array[i], 2)) + str(labels_ip[i])
+        
+        for node in G:
+            print(node)
+            node_color_array.append(node_colors[node])
+               
+        pos = nx.nx_agraph.graphviz_layout(G, prog='dot', args="-Gnodesep=5")
+        
+        plt.figure(figsize=(50, 50))
+            
+        nx.draw(G, pos, node_color=node_color_array)
+        
+        nx.draw_networkx_labels(G, pos=pos, font_size=10)
         
         nx.draw_networkx_edge_labels(G, pos, labels, font_color='red')
         
-        # Write the graph to a DOT file, which can be opened in Graphviz
+        plt.savefig(str(tol) + '/' + str(trimming) + '-connection-graph' + '.png')
         
-        nx.nx_agraph.write_dot(G, "C:/Users/Vicenzo Abichequer/Documents/cheatersdemise/SuspiciousPatternId/2/dot_graph.dot")
-        
-        plt.show()  
+        #plt.show()  
         
         print("Program finish.")
         

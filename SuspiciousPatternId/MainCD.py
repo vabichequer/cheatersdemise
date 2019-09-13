@@ -139,16 +139,16 @@ if __name__ == '__main__':
             selected_users_XX = Manager().list()
 
             print('Selecting CC users...')
-            p_CC = Process(target=selectUsers, args=(selected_users_CC, tol, correctExercises_minutes, correctExercises_minutes, 'CC',))
+            p_CC = Process(target=SelectUsers, args=(selected_users_CC, tol, correctExercises_minutes, correctExercises_minutes, 'CC',))
             p_CC.start()
             print('Selecting XC users...')
-            p_XC = Process(target=selectUsers, args=(selected_users_XC, tol, wrongExercises_minutes, correctExercises_minutes, 'XC',))
+            p_XC = Process(target=SelectUsers, args=(selected_users_XC, tol, wrongExercises_minutes, correctExercises_minutes, 'XC',))
             p_XC.start()
             print('Selecting CX users...')
-            p_CX = Process(target=selectUsers, args=(selected_users_CX, tol, correctExercises_minutes, wrongExercises_minutes, 'CX',))
+            p_CX = Process(target=SelectUsers, args=(selected_users_CX, tol, correctExercises_minutes, wrongExercises_minutes, 'CX',))
             p_CX.start()
             print('Selecting XX users...')
-            p_XX = Process(target=selectUsers, args=(selected_users_XX, tol, wrongExercises_minutes, wrongExercises_minutes, 'XX',))
+            p_XX = Process(target=SelectUsers, args=(selected_users_XX, tol, wrongExercises_minutes, wrongExercises_minutes, 'XX',))
             p_XX.start()
 
             p_CC.join()
@@ -252,16 +252,23 @@ if __name__ == '__main__':
 
         user_pairs, user_score_difference, fig, string_dump = generate_pairs(type_array, df.Usuario, scores, trimming, label, plot=True)
 
+        print('TYPE ARRAY 1')
+
+        for i in range(0, len(user_pairs)):
+            user_1 = user_pairs[i][0]
+            user_2 = user_pairs[i][1]
+            
+            print(user_1, 'vs', user_2, type_array[i][2])
+
+        print('FIM')
+        
         with open('distance_dump.txt', 'w') as filehandle:
             json.dump(string_dump, filehandle)
             
         #print('Plotting', len(user_pairs), 'pairs consisted of', len(users_in_common), 'users')
-        #fig.set_size_inches(20, len(fig.axes) * 6)
-        #plt.savefig(str(tol) + '/' + str(trimming) + '-distance.png')
-        #print('Figure saved.')
+        fig.set_size_inches(20, len(fig.axes) * 6)
+        plt.savefig(str(tol) + '/' + str(trimming) + '-distance.png')
         #plt.show()
-        
-        plt.close()
         
         # ## Distance matrix
 
@@ -314,10 +321,8 @@ if __name__ == '__main__':
         plt.savefig(str(tol) + '/' + str(trimming) + '-dendrogram.png')
 
         #plt.show()
-        
-        plt.close()
 
-        type_array = type_separation(all_selected_users, all_time_differences, tol)
+        #type_array = type_separation(all_selected_users, all_time_differences, tol)
 
         type_array = np.array(type_array)
         user_score_difference = np.array(user_score_difference)
@@ -342,7 +347,6 @@ if __name__ == '__main__':
                 i = i + 1
 
         print("Finished")
-
 
         # ## Scatter plot
 
@@ -371,8 +375,6 @@ if __name__ == '__main__':
         plt.savefig(str(tol) + '/' + str(trimming) + '-amount_of_exercises.png')
 
         #plt.show()
-
-        plt.close()
         
         # ## Distance from optimal curve (X^9)
 
@@ -414,8 +416,6 @@ if __name__ == '__main__':
         plt.savefig(str(tol) + '/' + str(trimming) + '-distance_from_curve.png')
 
         #plt.show()
-
-        plt.close()
 
         first = []
         second = []
@@ -474,8 +474,6 @@ if __name__ == '__main__':
 
         #plt.show()
 
-        plt.close()
-
         # Checking outliers or normal_points
 
         FLAG = 'outliers'
@@ -531,43 +529,41 @@ if __name__ == '__main__':
         plt.savefig(str(tol) + '/' + str(trimming) + '-exercises_same_ip-' + FLAG + '.png')
 
         #plt.show()
-        
-        plt.close()
 
-        # Material interaction index
+        # Material usage index
         #
         # By counting the number of events a user has, it can measure how many of them were directed towards reading the
         # materials. This is done by dividing the count of all the events by the count of the events where the user
         # tried to solve an exercise. However, since a user can try the same exercise multiple times, it was decided
-        # that if the user tried the exercise at least one time (be it right or wrong), then it would count as an interaction
-        # towards that exercise and that's it, no additional tries for that exercise would be considered as interactions.
-        # Therefore, the formula is: number_of_exercises_tried / (number_of_material_interactions + number_of_exercises_tried).
+        # that if the user tried the exercise at least one time (be it right or wrong), then it would count as a material usage
+        # towards that exercise and that's it, no additional tries for that exercise would be considered as material usage.
+        # Therefore, the formula is: number_of_exercises_tried / (number_of_material_usages + number_of_exercises_tried).
         # The results mean: 1 -> purely exercise tryouts (fake account); 0,5 -> equal number of exercise tryouts and material reviews
         # (legit user) and; 0 -> purely material reviews (probably a professor or a material thief)
         
 
-        interactions = check_interactions(array_being_analysed, df)
+        material_usage = check_material_usage(array_being_analysed, df)
 
         plt.figure(figsize=(10, 7))
         plt.xlabel('Distance')
         plt.ylabel('Course final score difference between users')
-        plt.title("Material interaction index")
+        plt.title("Material usage index")
 
-        interactions_str = []
+        material_usage_str = []
         
-        for i in range(0, len(interactions)):
-            interactions_str.append(str(str(round(interactions[i, 0], 2)) + ', ' + str(round(interactions[i, 1], 2))))
+        for i in range(0, len(material_usage)):
+            material_usage_str.append(str(str(round(material_usage[i, 0], 2)) + ', ' + str(round(material_usage[i, 1], 2))))
         
         scatter = plt.scatter(array_being_analysed[:, 0], array_being_analysed[:, 1], edgecolors = 'black', cmap='binary')
 
-        interaction_dump = []
+        material_usage_dump = []
 
-        for i, txt in enumerate(interactions_str):
+        for i, txt in enumerate(material_usage_str):
             plt.annotate((txt, (array_being_analysed[i, 2], array_being_analysed[i, 3])), (array_being_analysed[i, 0], array_being_analysed[i, 1]))
-            interaction_dump.append('User: ' + str(array_being_analysed[i, 2]) + ' User: ' + str(array_being_analysed[i, 3]) + ' ' + txt)
+            material_usage_dump.append('User: ' + str(array_being_analysed[i, 2]) + ' User: ' + str(array_being_analysed[i, 3]) + ' ' + txt)
 
-        with open('interaction_dump-' + FLAG + '.txt', 'w') as filehandle:
-            json.dump(interaction_dump, filehandle)
+        with open('material_usage_dump-' + FLAG + '.txt', 'w') as filehandle:
+            json.dump(material_usage_dump, filehandle)
 
         x = np.linspace(-1, 1, 201)
         y = [pow(i, 9) for i in x]
@@ -579,11 +575,9 @@ if __name__ == '__main__':
 
         plt.grid(color='grey', linestyle='--', linewidth=.5)
 
-        plt.savefig(str(tol) + '/' + str(trimming) + '-interaction_index-' + FLAG + '.png')
+        plt.savefig(str(tol) + '/' + str(trimming) + '-material_usage_index-' + FLAG + '.png')
 
         #plt.show()
-        
-        plt.close()
         
         # Create a connection graph
         
@@ -618,15 +612,15 @@ if __name__ == '__main__':
         
         G = nx.DiGraph()
         
-        distance_array = analysing_data[:, 0]
+        distance_array = []
         
         labels_ip = []
         i = 0
         
-        interactions = []
-        interactions_both = []
-        interactions_both.append(check_interactions(normal_points, df))
-        interactions_both.append(check_interactions(outliers, df))  
+        material_usage = []
+        material_usage_both = []
+        material_usage_both.append(check_material_usage(normal_points, df))
+        material_usage_both.append(check_material_usage(outliers, df))  
         
         while i < len(user_pairs_copy):
             user_1 = int(user_pairs_copy[i][0])
@@ -636,7 +630,8 @@ if __name__ == '__main__':
             for j in range(0, len(normal_points)):
                 if (user_1 == normal_points[j][2] and user_2 == normal_points[j][3]):
                     labels_ip.append(labels_ip_both[0][j])
-                    interactions.append(interactions_both[0][j])
+                    material_usage.append(material_usage_both[0][j])
+                    distance_array.append(normal_points[j, 0])
                     found = True
                     i = i + 1
                     break
@@ -645,20 +640,22 @@ if __name__ == '__main__':
                 for k in range(0, len(outliers)):
                     if (user_1 == outliers[k][2] and user_2 == outliers[k][3]):
                         labels_ip.append(labels_ip_both[1][k])
-                        interactions.append(interactions_both[1][k])
+                        material_usage.append(material_usage_both[1][k])
+                        distance_array.append(outliers[k, 0])
                         i = i + 1
                         break
+            print(user_1, 'vs', user_2, ':', distance_array[i - 1])
         
         node_colors = {}
         
-        for i in range(0, len(interactions)):            
+        for i in range(0, len(material_usage)):           
             user_1 = int(user_pairs_copy[i][0])
             user_2 = int(user_pairs_copy[i][1])
-            if (interactions[i][0] == 0):
+            if (material_usage[i][0] == 0):
                 node_colors[user_1] = 'red'
             else:
                 node_colors[user_1] = 'blue'
-            if (interactions[i][1] == 0):
+            if (material_usage[i][1] == 0):
                 node_colors[user_2] = 'red'
             else:
                 node_colors[user_2] = 'blue'
@@ -675,13 +672,14 @@ if __name__ == '__main__':
             
             if (distance_array[i] >= 0):
                 G.add_edge(user_1, user_2)
-                labels[user_1, user_2] = str(round(distance_array[i], 2)) + str(labels_ip[i])
+                labels[user_1, user_2] = str(abs(round(distance_array[i], 2))) + str(labels_ip[i])
             else:
                 G.add_edge(user_2, user_1)
-                labels[user_2, user_1] = str(round(distance_array[i], 2)) + str(labels_ip[i])
+                labels[user_2, user_1] = str(abs(round(distance_array[i], 2))) + str(labels_ip[i])
+        
+        abs_distance_array = [abs(number) for number in distance_array]
         
         for node in G:
-            print(node)
             node_color_array.append(node_colors[node])
                
         pos = nx.nx_agraph.graphviz_layout(G, prog='dot', args="-Gnodesep=5")
@@ -690,9 +688,11 @@ if __name__ == '__main__':
             
         nx.draw(G, pos, node_color=node_color_array)
         
+        nx.draw_networkx_edges(G, pos, width=(abs_distance_array * 10))
+        
         nx.draw_networkx_labels(G, pos=pos, font_size=10)
         
-        nx.draw_networkx_edge_labels(G, pos, labels, font_color='red')
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=labels, font_color='red')
         
         plt.savefig(str(tol) + '/' + str(trimming) + '-connection-graph' + '.png')
         

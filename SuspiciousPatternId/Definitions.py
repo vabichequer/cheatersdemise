@@ -231,9 +231,18 @@ def type_separation(all_user_pairs, all_time_differences, tol):
 #            print('\t Nbr exercises:', total_ex, 'Over:', total_over, 'Under:', total_under)
 #            print('\t Distance:', distance)
     
-    type_array.sort(key=take_third)
+    #type_array.sort(key=take_third)
     
     return type_array
+
+def calculateDistance(time_differences, tol):
+    nbr_ex, nbr_over, nbr_under = get_number_of_exercises(time_differences, tol)
+    total_ex = np.nansum(nbr_ex)
+    total_over = np.nansum(nbr_over)
+    total_under = np.nansum(nbr_under)
+
+    distance = (total_over + total_under) / total_ex
+    return distance
 
 def computeMetrics(tol, time_difference):
     avg_dist = np.empty((len(time_difference), len(time_difference)))
@@ -336,8 +345,8 @@ def check_ip_addresses(users, df):
 
     return ip_addrs
 
-def check_interactions(users, df):
-    interaction_rate = np.zeros((len(users), 2))
+def check_material_usage(users, df):
+    material_usage_rate = np.zeros((len(users), 2))
     
     for i in range(0, len(users)):
         analysed_exercises_1 = []
@@ -346,8 +355,8 @@ def check_interactions(users, df):
         for j in range(0, len(df.Usuario)):
             total_1 = 0
             total_2 = 0
-            interactions_1 = 0
-            interactions_2 = 0
+            material_usage_1 = 0
+            material_usage_2 = 0
 
             if (int(df.Usuario[j]) == int(df.Usuario[users[i][2]])):
                 for k in range(0, len(df.Eventos[j])):
@@ -357,11 +366,11 @@ def check_interactions(users, df):
                             analysed_exercises_1.append(df.Eventos[j][k]['id_problema'])
                     else:
                         if (df.Eventos[j][k]['evento'] != 'error_json'):
-                            interactions_1 = interactions_1 + 1
+                            material_usage_1 = material_usage_1 + 1
                             total_1 = total_1 + 1
                 
-                interaction_rate[i][0] = (interactions_1/total_1)
-                #print('User 1 (', users[i][2], ') interaction rate: ', interactions_1/total_1)
+                material_usage_rate[i][0] = (material_usage_1/total_1)
+                #print('User 1 (', users[i][2], ') material usage rate: ', material_usage_1/total_1)
 
             if (int(df.Usuario[j]) == int(df.Usuario[users[i][3]])):
                 for k in range(0, len(df.Eventos[j])):
@@ -371,13 +380,13 @@ def check_interactions(users, df):
                             analysed_exercises_2.append(df.Eventos[j][k]['id_problema'])
                     else:
                         if (df.Eventos[j][k]['evento'] != 'error_json'):
-                            interactions_2 = interactions_2 + 1
+                            material_usage_2 = material_usage_2 + 1
                             total_2 = total_2 + 1
 
-                interaction_rate[i][1] = (interactions_2/total_2)
-                #print('User 2 (', users[i][3], ') interaction rate: ', interactions_2/total_2)
+                material_usage_rate[i][1] = (material_usage_2/total_2)
+                #print('User 2 (', users[i][3], ') material usage rate: ', material_usage_2/total_2)
     
-    return interaction_rate
+    return material_usage_rate
 
 if (trimming < tol):
     raise ValueError('The trimming value is lower than the tolerance. The code will not work like this.')

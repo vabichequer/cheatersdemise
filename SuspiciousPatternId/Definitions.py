@@ -39,6 +39,9 @@ date_format = '%Y-%m-%d %H:%M:%S'
 # number of exercises
 N_EXERCISES = 196
 
+# Minimum number of exercises
+MIN_EXERCISES = 20
+
 # Time tolerance for exercises
 tol = 2
 trimming = tol #math.inf
@@ -110,11 +113,11 @@ def generate_pairs(data_array, user_id_data, scores_data, trimming, label, plot)
             ax = fig.add_subplot(n+1, 1, n+1) 
 
             ax.set_title('User ' + str(user_1) + ' (' + str(user1_id) +': ' + str(score1) + ') vs User ' +
-                          str(user_2) + ' (' + str(user2_id) +': ' + str(score2) + ')' + ' || Distance: '
+                          str(user_2) + ' (' + str(user2_id) +': ' + str(score2) + ')' + ' || User bias: '
                          + str(data_array[i][2]), fontsize=13)
             
             string_dump.append(str('User ' + str(user_1) + ' (' + str(user1_id) +': ' + str(score1) + ') vs User ' +
-                          str(user_2) + ' (' + str(user2_id) +': ' + str(score2) + ')' + ' || Distance: '
+                          str(user_2) + ' (' + str(user2_id) +': ' + str(score2) + ')' + ' || User bias: '
                          + str(data_array[i][2])))
             
             ax.set_xlabel('Time (minutes)')
@@ -221,28 +224,19 @@ def type_separation(all_user_pairs, all_time_differences, tol):
             total_over = np.nansum(nbr_over)
             total_under = np.nansum(nbr_under)
 
-            distance = (total_over + total_under) / total_ex
+            user_bias = (total_over + total_under) / total_ex
             
-            type_array.append((users[outer_loop], td, distance, total_ex))          
+            type_array.append((users[outer_loop], td, user_bias, total_ex))          
 
 # DEBUG
 #            print(outer_loop, ':')
 #            print('\t User:', users[outer_loop][0], 'vs User:', users[outer_loop][1])
 #            print('\t Nbr exercises:', total_ex, 'Over:', total_over, 'Under:', total_under)
-#            print('\t Distance:', distance)
+#            print('\t User bias:', user_bias)
     
     #type_array.sort(key=take_third)
     
     return type_array
-
-def calculateDistance(time_differences, tol):
-    nbr_ex, nbr_over, nbr_under = get_number_of_exercises(time_differences, tol)
-    total_ex = np.nansum(nbr_ex)
-    total_over = np.nansum(nbr_over)
-    total_under = np.nansum(nbr_under)
-
-    distance = (total_over + total_under) / total_ex
-    return distance
 
 def computeMetrics(tol, time_difference):
     avg_dist = np.empty((len(time_difference), len(time_difference)))

@@ -104,7 +104,7 @@ if __name__ == '__main__':
 
         for i in range(0, N_USERS):
             nbr_attempts = wrongExercisesCount[i] + correctExercisesCount[i]
-            if (nbr_attempts < 10):
+            if (nbr_attempts < MIN_EXERCISES):
                 df = df.drop([i])
                 users_to_delete.append(i)
 
@@ -122,7 +122,7 @@ if __name__ == '__main__':
         correctExercises_minutes = correctExercises / 60
         wrongExercises_minutes = wrongExercises / 60
 
-        dump_exists = os.path.isfile(str(tol) + '/' + str(tol) + '.csv')
+        dump_exists = os.path.isfile(str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv')
 
         if (dump_exists):
             df_all_selected_users = pd.read_csv(str(tol) + '/' + str(tol) + '.csv', index_col=0)
@@ -139,16 +139,16 @@ if __name__ == '__main__':
             selected_users_XX = Manager().list()
 
             print('Selecting CC users...')
-            p_CC = Process(target=SelectUsers, args=(selected_users_CC, tol, correctExercises_minutes, correctExercises_minutes, 'CC',))
+            p_CC = Process(target=SelectUsers, args=(selected_users_CC, tol, correctExercises_minutes, correctExercises_minutes, 'CC', N_USERS,))
             p_CC.start()
             print('Selecting XC users...')
-            p_XC = Process(target=SelectUsers, args=(selected_users_XC, tol, wrongExercises_minutes, correctExercises_minutes, 'XC',))
+            p_XC = Process(target=SelectUsers, args=(selected_users_XC, tol, wrongExercises_minutes, correctExercises_minutes, 'XC', N_USERS,))
             p_XC.start()
             print('Selecting CX users...')
-            p_CX = Process(target=SelectUsers, args=(selected_users_CX, tol, correctExercises_minutes, wrongExercises_minutes, 'CX',))
+            p_CX = Process(target=SelectUsers, args=(selected_users_CX, tol, correctExercises_minutes, wrongExercises_minutes, 'CX', N_USERS,))
             p_CX.start()
             print('Selecting XX users...')
-            p_XX = Process(target=SelectUsers, args=(selected_users_XX, tol, wrongExercises_minutes, wrongExercises_minutes, 'XX',))
+            p_XX = Process(target=SelectUsers, args=(selected_users_XX, tol, wrongExercises_minutes, wrongExercises_minutes, 'XX', N_USERS,))
             p_XX.start()
 
             p_CC.join()
@@ -157,7 +157,7 @@ if __name__ == '__main__':
             p_XX.join()
 
             df_all_selected_users = pd.DataFrame([selected_users_CC, selected_users_XC, selected_users_CX, selected_users_XX])
-            df_all_selected_users.to_csv(str(tol) + '/' + str(tol) + '.csv')
+            df_all_selected_users.to_csv(str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv')
 
             print("Data stored.")
 
@@ -251,23 +251,13 @@ if __name__ == '__main__':
         type_array = type_separation(all_selected_users, all_time_differences, tol)
 
         user_pairs, user_score_difference, fig, string_dump = generate_pairs(type_array, df.Usuario, scores, trimming, label, plot=True)
-
-        print('TYPE ARRAY 1')
-
-        for i in range(0, len(user_pairs)):
-            user_1 = user_pairs[i][0]
-            user_2 = user_pairs[i][1]
-            
-            print(user_1, 'vs', user_2, type_array[i][2])
-
-        print('FIM')
         
-        with open('distance_dump.txt', 'w') as filehandle:
+        with open('user_bias_dump.txt', 'w') as filehandle:
             json.dump(string_dump, filehandle)
             
         #print('Plotting', len(user_pairs), 'pairs consisted of', len(users_in_common), 'users')
         fig.set_size_inches(20, len(fig.axes) * 6)
-        plt.savefig(str(tol) + '/' + str(trimming) + '-distance.png')
+        plt.savefig(str(tol) + '/' + str(trimming) + '-user_bias.png')
         #plt.show()
         
         # ## Distance matrix
@@ -351,7 +341,7 @@ if __name__ == '__main__':
         # ## Scatter plot
 
         plt.figure(figsize=(10, 7))
-        plt.xlabel('Distance')
+        plt.xlabel('User bias')
         plt.ylabel('Course final score difference between users')
         plt.title("Amount of exercises by user")
 
@@ -379,7 +369,7 @@ if __name__ == '__main__':
         # ## Distance from optimal curve (X^9)
 
         plt.figure(figsize=(10, 7))
-        plt.xlabel('Distance')
+        plt.xlabel('User bias')
         plt.ylabel('Course final score difference between users')
         plt.title("Distance from optimal curve (X^9)")
 
@@ -425,7 +415,7 @@ if __name__ == '__main__':
         others = []
 
         plt.figure(figsize=(10, 7))
-        plt.xlabel('Distance')
+        plt.xlabel('User bias')
         plt.ylabel('Course final score difference between users')
         plt.title("Hypotheses")
 
@@ -505,7 +495,7 @@ if __name__ == '__main__':
             ips_in_common.append(amount)
 
         plt.figure(figsize=(10, 7))
-        plt.xlabel('Distance')
+        plt.xlabel('User bias')
         plt.ylabel('Course final score difference between users')
         plt.title("Exercises with the same IP")
 
@@ -545,7 +535,7 @@ if __name__ == '__main__':
         material_usage = check_material_usage(array_being_analysed, df)
 
         plt.figure(figsize=(10, 7))
-        plt.xlabel('Distance')
+        plt.xlabel('User bias')
         plt.ylabel('Course final score difference between users')
         plt.title("Material usage index")
 
@@ -612,8 +602,8 @@ if __name__ == '__main__':
         
         G = nx.DiGraph()
         
-        distance_array = []
-        
+        user_bias_array = analysing_data[:, 0]
+                
         labels_ip = []
         i = 0
         
@@ -631,7 +621,6 @@ if __name__ == '__main__':
                 if (user_1 == normal_points[j][2] and user_2 == normal_points[j][3]):
                     labels_ip.append(labels_ip_both[0][j])
                     material_usage.append(material_usage_both[0][j])
-                    distance_array.append(normal_points[j, 0])
                     found = True
                     i = i + 1
                     break
@@ -641,10 +630,8 @@ if __name__ == '__main__':
                     if (user_1 == outliers[k][2] and user_2 == outliers[k][3]):
                         labels_ip.append(labels_ip_both[1][k])
                         material_usage.append(material_usage_both[1][k])
-                        distance_array.append(outliers[k, 0])
                         i = i + 1
                         break
-            print(user_1, 'vs', user_2, ':', distance_array[i - 1])
         
         node_colors = {}
         
@@ -670,14 +657,14 @@ if __name__ == '__main__':
             G.add_node(user_1)
             G.add_node(user_2)
             
-            if (distance_array[i] >= 0):
-                G.add_edge(user_1, user_2)
-                labels[user_1, user_2] = str(abs(round(distance_array[i], 2))) + str(labels_ip[i])
+            temp = abs(round(user_bias_array[i], 2))
+            
+            if (user_bias_array[i] >= 0):
+                G.add_edge(user_1, user_2, width=temp * 10)
+                labels[user_1, user_2] = str(temp) + str(labels_ip[i])
             else:
-                G.add_edge(user_2, user_1)
-                labels[user_2, user_1] = str(abs(round(distance_array[i], 2))) + str(labels_ip[i])
-        
-        abs_distance_array = [abs(number) for number in distance_array]
+                G.add_edge(user_2, user_1, width=temp * 10)
+                labels[user_2, user_1] = str(temp) + str(labels_ip[i])
         
         for node in G:
             node_color_array.append(node_colors[node])
@@ -685,19 +672,24 @@ if __name__ == '__main__':
         pos = nx.nx_agraph.graphviz_layout(G, prog='dot', args="-Gnodesep=5")
         
         plt.figure(figsize=(50, 50))
+        
+        width = [G[u][v]['width'] for u,v in G.edges()]      
             
         nx.draw(G, pos, node_color=node_color_array)
         
-        nx.draw_networkx_edges(G, pos, width=(abs_distance_array * 10))
+        nx.draw_networkx_edges(G, pos, width=width)
         
-        nx.draw_networkx_labels(G, pos=pos, font_size=10)
+        nx.draw_networkx_labels(G, pos, font_size=10)
         
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=labels, font_color='red')
+        text = nx.draw_networkx_edge_labels(G, pos, edge_labels=labels, font_color='red')
+        
+        for _,t in text.items():
+            t.set_rotation('vertical')
         
         plt.savefig(str(tol) + '/' + str(trimming) + '-connection-graph' + '.png')
         
         #plt.show()  
         
-        print("Program finish.")
+        print("Program finished.")
         
     main()

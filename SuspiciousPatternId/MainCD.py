@@ -125,7 +125,7 @@ if __name__ == '__main__':
         dump_exists = os.path.isfile(str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv')
 
         if (dump_exists):
-            df_all_selected_users = pd.read_csv(str(tol) + '/' + str(tol) + '.csv', index_col=0)
+            df_all_selected_users = pd.read_csv(str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv', index_col=0)
             df_all_selected_users.fillna('', inplace=True)
 
             selected_users_CC = literal_eval(df_all_selected_users.loc[0][0])
@@ -139,16 +139,16 @@ if __name__ == '__main__':
             selected_users_XX = Manager().list()
 
             print('Selecting CC users...')
-            p_CC = Process(target=SelectUsers, args=(selected_users_CC, tol, correctExercises_minutes, correctExercises_minutes, 'CC', N_USERS,))
+            p_CC = Process(target=su.selectUsers, args=(selected_users_CC, tol, correctExercises_minutes, correctExercises_minutes, 'CC', N_USERS, MIN_EXERCISES,))
             p_CC.start()
             print('Selecting XC users...')
-            p_XC = Process(target=SelectUsers, args=(selected_users_XC, tol, wrongExercises_minutes, correctExercises_minutes, 'XC', N_USERS,))
+            p_XC = Process(target=su.selectUsers, args=(selected_users_XC, tol, wrongExercises_minutes, correctExercises_minutes, 'XC', N_USERS, MIN_EXERCISES))
             p_XC.start()
             print('Selecting CX users...')
-            p_CX = Process(target=SelectUsers, args=(selected_users_CX, tol, correctExercises_minutes, wrongExercises_minutes, 'CX', N_USERS,))
+            p_CX = Process(target=su.selectUsers, args=(selected_users_CX, tol, correctExercises_minutes, wrongExercises_minutes, 'CX', N_USERS, MIN_EXERCISES))
             p_CX.start()
             print('Selecting XX users...')
-            p_XX = Process(target=SelectUsers, args=(selected_users_XX, tol, wrongExercises_minutes, wrongExercises_minutes, 'XX', N_USERS,))
+            p_XX = Process(target=su.selectUsers, args=(selected_users_XX, tol, wrongExercises_minutes, wrongExercises_minutes, 'XX', N_USERS, MIN_EXERCISES))
             p_XX.start()
 
             p_CC.join()
@@ -242,15 +242,15 @@ if __name__ == '__main__':
             temp_users.pop(z)
             temp_td.pop(z)
 
-        #print(label)
-        #print(label[0], len(all_selected_users[0]), '||', len(selected_users_CC))
-        #print(label[1], len(all_selected_users[1]), '||', len(selected_users_XC))
-        #print(label[2], len(all_selected_users[2]), '||', len(selected_users_CX))
-        #print(label[3], len(all_selected_users[3]), '||', len(selected_users_XX))
+        print(label)
+        print(label[0], len(all_selected_users[0]), '||', len(selected_users_CC))
+        print(label[1], len(all_selected_users[1]), '||', len(selected_users_XC))
+        print(label[2], len(all_selected_users[2]), '||', len(selected_users_CX))
+        print(label[3], len(all_selected_users[3]), '||', len(selected_users_XX))
 
         type_array = type_separation(all_selected_users, all_time_differences, tol)
 
-        user_pairs, user_score_difference, fig, string_dump = generate_pairs(type_array, df.Usuario, scores, trimming, label, plot=True)
+        user_pairs, user_score_difference, fig, string_dump, user_interaction_percentages = generate_pairs(type_array, df.Usuario, scores, trimming, label, plot=True)
         
         with open('user_bias_dump.txt', 'w') as filehandle:
             json.dump(string_dump, filehandle)
@@ -690,6 +690,31 @@ if __name__ == '__main__':
         
         #plt.show()  
         
-        print("Program finished.")
+        
+        ##############
+        # Clustering #
+        ##############
+
+        CC = user_interaction_percentages[:][0]
+        XC = user_interaction_percentages[:][1]
+        XX = user_interaction_percentages[:][2]
+        MIR1 = material_usage[:][0]
+        MIR2 = material_usage[:][1]
+        ScoreDif = user_score_difference
+        IPs = [i / j  for i, j in zip(ips_in_common, total_exercises)]
+        
+        dict_var = {'CC':CC, 'XC':XC, 'XX':XX, 'MIR1':MIR1, 'MIR2':MIR2, 'Score Diff':ScoreDif, 'IPs':IPs}
+        
+        x = pd.DataFrame(dict_var)
+        
+        pca = PCA(n_components = 2)
+        principalComponents = pca.fit_transform(x)
+        
+        plt.scatter(principalComponents[0], principalComponents[1], edgecolors = 'black', cmap='binary')
+
+        plt.grid(color='grey', linestyle='--', linewidth=.5)
+        
+        plt.show()
+        
         
     main()

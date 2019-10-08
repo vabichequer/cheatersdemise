@@ -1,4 +1,4 @@
-# Imports
+# Imports and definition
 
 import scipy.cluster.hierarchy as sch
 import scipy.spatial.distance as ssd
@@ -7,6 +7,7 @@ import collections as coll
 import matplotlib as mpl
 import networkx as nx
 import seaborn as sns
+import sklearn as skl
 import pandas as pd
 import sympy as sym
 import numpy as np
@@ -15,15 +16,13 @@ import json
 import time
 import sys
 import ctd
-import SelectUsers
 import os
 from sklearn.cluster import AgglomerativeClustering
 from multiprocessing import Process, Manager
+from sklearn.decomposition import PCA
+from sklearn import preprocessing
 from functools import partial
 from ast import literal_eval
-
-clear = lambda: os.system('cls') #on Windows System
-clear()
 
 ## Constants
 
@@ -40,7 +39,7 @@ date_format = '%Y-%m-%d %H:%M:%S'
 N_EXERCISES = 196
 
 # Minimum number of exercises
-MIN_EXERCISES = 20
+MIN_EXERCISES = 10
 
 # Time tolerance for exercises
 tol = 2
@@ -73,7 +72,26 @@ def take_third(elem):
 
 def take_size(elem):
     return len(elem)
-    
+
+# faster, but still slow
+# fast subtractive convolutional algorithm? Nope. Not a convolution, as it would not need to get inverted
+# Mathematical deduction on my scrapbook
+def selectUsers(selected_users, tol, exercise_array_1, exercise_array_2, version, N_USERS, MIN_EXERCISES):
+    for i in range(0, N_USERS - 1):
+        for j in range(i + 1, N_USERS):
+            time_dif = exercise_array_1[i] - exercise_array_2[j]
+            if (version == 'XC'):
+                time_dif = time_dif[time_dif <= 0]
+            elif (version == 'CX'):
+                time_dif = time_dif[time_dif >= 0]
+            nbr_exercises = sum(abs(x) < tol for x in time_dif)
+            if (nbr_exercises >= MIN_EXERCISES):
+                print(version, 'added.', i, 'is user 1,', j, 'is user 2.', nbr_exercises, 'exercises.', tol, 'minutes tolerance')
+                selected_users.append([i, j])
+
+    print(version, 'thread finished.', version, 'added', len(selected_users), 'users.')
+    return
+
 def generate_pairs(data_array, user_id_data, scores_data, trimming, label, plot):
     mpl.rcParams.update(mpl.rcParamsDefault)
     
@@ -83,6 +101,8 @@ def generate_pairs(data_array, user_id_data, scores_data, trimming, label, plot)
     string_dump = []
     
     user_score_difference = []
+    
+    user_interaction_percentages = []
     
     for i in range(0, len(data_array)):
         arrays = [[], [], [], []]           
@@ -126,7 +146,11 @@ def generate_pairs(data_array, user_id_data, scores_data, trimming, label, plot)
                     label=label, bins=100, stacked=True)            
             ax.legend()
             
-    return user_pairs, user_score_difference, fig, string_dump
+            total_ex = len(arrays[0]) + len(arrays[1]) + len(arrays[2]) + len(arrays[3])
+            
+            user_interaction_percentages.append((len(arrays[0])/total_ex, (len(arrays[1]) + len(arrays[2]))/total_ex, len(arrays[3])/total_ex))
+            
+    return user_pairs, user_score_difference, fig, string_dump, user_interaction_percentages
 
 def get_number_of_exercises(data, tol):
     #nbr_exercises_over = sum(((x >= 0) and (x < tol)) for x in data)
@@ -286,6 +310,10 @@ def distance(x1, y1):
     
     return min(((x - x1)**2 + (x**9 - y1)**2)**(1/2))
 
+### Check IP addresses
+# This methos checks the ips from each pair in 'users' and adds them to a list, excluding repetitons. 
+# It also checks how many unique exercises were done with an IP for each in the pair.
+
 def check_ip_addresses(users, df):
     df_ip = readDataFile("eventos_conIp.json")
     ip_addrs = []
@@ -385,4 +413,4 @@ def check_material_usage(users, df):
 if (trimming < tol):
     raise ValueError('The trimming value is lower than the tolerance. The code will not work like this.')
 else:
-    print('Everything is correct.')
+    print('Libraries and definitions loaded correctly.')

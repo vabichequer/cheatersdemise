@@ -42,7 +42,7 @@ N_EXERCISES = 196
 MIN_EXERCISES = 10
 
 # Time tolerance for exercises
-tol = 2
+tol = 10
 trimming = tol #math.inf
 
 cluster_tag = 'all'

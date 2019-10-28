@@ -39,7 +39,7 @@ date_format = '%Y-%m-%d %H:%M:%S'
 N_EXERCISES = 196
 
 # Minimum number of exercises
-MIN_EXERCISES = 10
+MIN_EXERCISES = 20
 
 # Time tolerance for exercises
 tol = 10

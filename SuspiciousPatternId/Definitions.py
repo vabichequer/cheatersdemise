@@ -39,10 +39,10 @@ date_format = '%Y-%m-%d %H:%M:%S'
 N_EXERCISES = 196
 
 # Minimum number of exercises
-MIN_EXERCISES = 20
+MIN_EXERCISES = 10
 
 # Time tolerance for exercises
-tol = 10
+tol = 2
 trimming = tol #math.inf
 
 cluster_tag = 'all'
@@ -104,6 +104,10 @@ def generate_pairs(data_array, user_id_data, scores_data, trimming, label, plot)
     
     user_interaction_percentages = []
     
+    example = ['(A)', '(B)', '(C)']
+
+    example_iter = 0
+
     for i in range(0, len(data_array)):
         arrays = [[], [], [], []]           
 
@@ -127,28 +131,39 @@ def generate_pairs(data_array, user_id_data, scores_data, trimming, label, plot)
         user_score_difference.append(score1 - score2)
         
         if (plot):
-            n = len(fig.axes)
-            for o in range(n):
-                fig.axes[o].change_geometry(n+1, 1, o+1)
-            ax = fig.add_subplot(n+1, 1, n+1) 
+            if ((user_1 == 115.0 and user_2 == 808.0) or (user_1 == 991.0 and user_2 == 3237.0) or (user_1 == 690.0 and user_2 == 1377.0)):
+                n = len(fig.axes)
+                for o in range(n):
+                    fig.axes[o].change_geometry(n+1, 1, o+1)
+                ax = fig.add_subplot(n+1, 1, n+1) 
 
-            ax.set_title('User ' + str(user_1) + ' (' + str(user1_id) +': ' + str(score1) + ') vs User ' +
-                          str(user_2) + ' (' + str(user2_id) +': ' + str(score2) + ')' + ' || User bias: '
-                         + str(data_array[i][2]), fontsize=13)
-            
-            string_dump.append(str('User ' + str(user_1) + ' (' + str(user1_id) +': ' + str(score1) + ') vs User ' +
-                          str(user_2) + ' (' + str(user2_id) +': ' + str(score2) + ')' + ' || User bias: '
-                         + str(data_array[i][2])))
-            
-            ax.set_xlabel('Time (minutes)')
-            ax.set_ylabel('Number of occurences')
-            ax.hist([arrays[0], arrays[1], arrays[2], arrays[3]], color=['blue', 'orange', 'green', 'red'],
-                    label=label, bins=100, stacked=True)            
-            ax.legend()
-            
-            total_ex = len(arrays[0]) + len(arrays[1]) + len(arrays[2]) + len(arrays[3])
-            
-            user_interaction_percentages.append((len(arrays[0])/total_ex, (len(arrays[1]) + len(arrays[2]))/total_ex, len(arrays[3])/total_ex))
+                size = 25
+
+                ax.set_title(example[example_iter] + str(user_1), fontsize=size)
+
+                example_iter += 1
+                
+                string_dump.append(str('User ' + str(user_1) + ' (' + str(user1_id) +': ' + str(score1) + ') vs User ' +
+                            str(user_2) + ' (' + str(user2_id) +': ' + str(score2) + ')' + ' || User bias: '
+                            + str(data_array[i][2])))
+                
+                ax.set_xlabel('Δt (User 1, User 2)', fontsize=size)
+                ax.set_ylabel('Number of occurences', fontsize=size)
+                ax.tick_params(axis='both', which='both', labelsize=size)
+
+                new_xc = [i for i in arrays[1] if i < 0] + [i for i in arrays[2] if i >= 0]
+                new_cx = [i for i in arrays[1] if i >= 0] + [i for i in arrays[2] if i < 0]
+
+                ax.hist([arrays[0], new_xc, new_cx, arrays[3]], color=['blue', 'orange', 'green', 'red'],
+                        label=label, bins=100, stacked=True)         
+                ax.legend(prop={'size': size})
+
+        new_xc = [i for i in arrays[1] if i < 0] + [i for i in arrays[2] if i >= 0]
+        new_cx = [i for i in arrays[1] if i >= 0] + [i for i in arrays[2] if i < 0]
+
+        total_ex = len(arrays[0]) + len(arrays[1]) + len(arrays[2]) + len(arrays[3])
+                
+        user_interaction_percentages.append((len(arrays[0])/total_ex, (len(new_xc))/total_ex, len(arrays[3])/total_ex))
             
     return user_pairs, user_score_difference, fig, string_dump, user_interaction_percentages
 
@@ -293,13 +308,15 @@ def plotHeatmap(data, title):
     ax.set_title(title)
     sns.heatmap(data, mask=mask, square=True, linewidths=3, cbar_kws={"shrink": .5}, ax = ax)
 
-def calculateHistogram(time_differences, trimming):    
+def calculateHistogram(time_differences, trimming, minutes=True):    
     temp_hist = np.empty(N_EXERCISES)
     temp_hist.fill(np.nan)
 
     for i in range(0, N_EXERCISES):
         if(abs(time_differences[i]) < trimming):
             temp_hist[i] = time_differences[i]
+            if not minutes:
+                temp_hist[i] *= 60
 
     temp_hist = temp_hist[~np.isnan(temp_hist)]    
     return temp_hist

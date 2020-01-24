@@ -7,9 +7,15 @@ def computeTimeDifferences(time_difference, selected_users, exercise_array_1, ex
         j = selected_users[i][0]
         k = selected_users[i][1]
         
+        #print("Users:", j, "vs", k)
+
         for l in range(0, N_EXERCISES):
-            td_temp.append(exercise_array_1[j][l] - exercise_array_2[k][l])
-        
+            total = exercise_array_1[j][l] - exercise_array_2[k][l]
+            td_temp.append(total)
+            if (total <= 2):
+                print(l)
+
+
         time_difference.append(td_temp)
     print(version, 'finished.')
     return

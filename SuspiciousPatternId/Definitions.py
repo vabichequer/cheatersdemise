@@ -38,11 +38,11 @@ date_format = '%Y-%m-%d %H:%M:%S'
 # number of exercises
 N_EXERCISES = 196
 
-# Minimum number of exercises
-MIN_EXERCISES = 10
+# Minimum percentage of exercises in common
+MIN_EXERCISES_PERCENTAGE = 0.9
 
 # Time tolerance for exercises
-tol = 2
+tol = 5
 trimming = tol #math.inf
 
 cluster_tag = 'all'
@@ -73,25 +73,100 @@ def take_third(elem):
 def take_size(elem):
     return len(elem)
 
+def hours():
+    return '[' + time.strftime('%X') + ']: '
+    
+
 # faster, but still slow
 # fast subtractive convolutional algorithm? Nope. Not a convolution, as it would not need to get inverted
 # Mathematical deduction on my scrapbook
-def selectUsers(selected_users, tol, exercise_array_1, exercise_array_2, version, N_USERS, MIN_EXERCISES):
+def countInteractions(interactions, tol, exercise_array_1, exercise_array_2, version, N_USERS):
     for i in range(0, N_USERS - 1):
         for j in range(i + 1, N_USERS):
             time_dif = exercise_array_1[i] - exercise_array_2[j]
-            if (version == 'XC'):
-                time_dif = time_dif[time_dif <= 0]
-            elif (version == 'CX'):
-                time_dif = time_dif[time_dif >= 0]
-            nbr_exercises = sum(abs(x) < tol for x in time_dif)
-            if (nbr_exercises >= MIN_EXERCISES):
-                print(version, 'added.', i, 'is user 1,', j, 'is user 2.', nbr_exercises, 'exercises.', tol, 'minutes tolerance')
-                selected_users.append([i, j])
-
-    print(version, 'thread finished.', version, 'added', len(selected_users), 'users.')
+            
+            nbr_exercises_under = np.sum(np.abs(time_dif) < tol) #sum(abs(x) < tol for x in time_dif)
+            nbr_exercises = np.size(time_dif) - np.sum(np.isnan(time_dif)) #sum(not np.isnan(x) for x in time_dif)
+            
+            interactions.append([i, j, nbr_exercises_under, nbr_exercises])
+        if (not (i % 100)):
+            print(hours() + version + ': '+ str(i) + ' (' + str(i/(N_USERS - 1)) + '% complete)')
+    print(version, 'thread finished.', version, 'added', len(interactions), 'pairs.')
     return
 
+def countInteractions_XC(interactions, tol, exercise_array_1, exercise_array_2, version, N_USERS):
+    f = open(version + '.txt', 'w')
+    for i in range(0, N_USERS - 1):
+        for j in range(i + 1, N_USERS):
+            time_dif = exercise_array_1[i] - exercise_array_2[j]
+            time_dif = time_dif[time_dif <= 0]
+            
+            nbr_exercises_under = np.sum(np.abs(time_dif) < tol) #sum(abs(x) < tol for x in time_dif)
+            nbr_exercises = np.size(time_dif) - np.sum(np.isnan(time_dif)) #sum(not np.isnan(x) for x in time_dif)
+
+            interactions.append([i, j, nbr_exercises_under, nbr_exercises])
+        if (not (i % 100)):
+            print(hours() + version + ': '+ str(i) + ' (' + str(i/(N_USERS - 1)) + '% complete)')
+    print(version, 'thread finished.', version, 'added', len(interactions), 'pairs.')
+    f.close()
+    return
+
+def countInteractions_CX(interactions, tol, exercise_array_1, exercise_array_2, version, N_USERS):
+    f = open(version + '.txt', 'w')
+    for i in range(0, N_USERS - 1):
+        for j in range(i + 1, N_USERS):
+            time_dif = exercise_array_1[i] - exercise_array_2[j]
+            time_dif = time_dif[time_dif >= 0]
+            
+            nbr_exercises_under = np.sum(np.abs(time_dif) < tol) #sum(abs(x) < tol for x in time_dif)
+            nbr_exercises = np.size(time_dif) - np.sum(np.isnan(time_dif)) #sum(not np.isnan(x) for x in time_dif)
+            
+            interactions.append([i, j, nbr_exercises_under, nbr_exercises])
+        if (not (i % 100)):
+            print(hours() + version + ': '+ str(i) + ' (' + str(i/(N_USERS - 1)) + '% complete)')
+    print(version, 'thread finished.', version, 'added', len(interactions), 'pairs.')
+    f.close()
+    return
+
+def get_number_of_exercises(td, tol):
+    #nbr_exercises_over = sum(((x >= 0) and (x < tol)) for x in data)
+    #nbr_exercises_under = sum(((x <= 0) and (x > -tol)) for x in data)
+
+    nbr_exercises_over = 0
+    nbr_exercises_under = 0
+
+    for k in range(0, len(td)):
+        a = td[k]
+
+        nbr_exercises_over += np.size(a[(a >= 0) & (a < tol)])
+        nbr_exercises_under -= np.size(a[(a <= 0) & (a > -tol)])
+
+    return nbr_exercises_over, nbr_exercises_under
+
+def join_interaction(int_CC, int_XC, int_CX, int_XX, amount_users, x_exer, c_exer):
+    type_array = []
+    percentile_under_tol = []
+    
+    for idx in range(0, len(int_CC)):
+        if (not (idx % 1000)):
+            print(hours() + str(idx) + ' (' + str(idx/len(int_CC)) + '% complete)')
+        nbr_exer_inside_tol = int_CC[idx][2] + int_XC[idx][2] + int_CX[idx][2] + int_XX[idx][2]
+        nbr_exer = int_CC[idx][3] + int_XC[idx][3] + int_CX[idx][3] + int_XX[idx][3]
+
+        if (nbr_exer != 0):
+            percentile_under_tol.append(nbr_exer_inside_tol/nbr_exer)
+            if nbr_exer_inside_tol/nbr_exer >= MIN_EXERCISES_PERCENTAGE:
+                i = int_CC[idx][0]
+                j = int_CC[idx][1]
+                td = [c_exer[i] - c_exer[j], x_exer[i] - c_exer[j], c_exer[i] - x_exer[j], x_exer[i] - x_exer[j]]
+                [total_over, total_under] = get_number_of_exercises(td, tol)
+
+                user_bias = (total_over + total_under) / nbr_exer
+
+                type_array.append(([i, j], td, user_bias, nbr_exer))   
+          
+    return type_array, percentile_under_tol            
+                                
 def generate_pairs(data_array, user_id_data, scores_data, trimming, label, plot):
     mpl.rcParams.update(mpl.rcParamsDefault)
     
@@ -112,7 +187,7 @@ def generate_pairs(data_array, user_id_data, scores_data, trimming, label, plot)
         arrays = [[], [], [], []]           
 
         for j in range(0, 4):
-            if(isinstance(data_array[i][1][j], list)):
+            if(isinstance(data_array[i][1][j], np.ndarray)):
                 arrays[j] = calculateHistogram(data_array[i][1][j], trimming)
                 user_1, user_2 = return_users(data_array[i][0])
 
@@ -131,35 +206,31 @@ def generate_pairs(data_array, user_id_data, scores_data, trimming, label, plot)
         user_score_difference.append(score1 - score2)
         
         if (plot):
-            if ((user_1 == 115.0 and user_2 == 808.0) or (user_1 == 991.0 and user_2 == 3237.0) or (user_1 == 690.0 and user_2 == 1377.0)):
-                n = len(fig.axes)
-                for o in range(n):
-                    fig.axes[o].change_geometry(n+1, 1, o+1)
-                ax = fig.add_subplot(n+1, 1, n+1) 
+            n = len(fig.axes)
+            for o in range(n):
+                fig.axes[o].change_geometry(n+1, 1, o+1)
+            ax = fig.add_subplot(n+1, 1, n+1) 
 
-                size = 25
+            size = 25
 
-                ax.set_title(example[example_iter] + str(user_1), fontsize=size)
+            ax.set_title(example[example_iter] + str(user_1), fontsize=size)
 
-                example_iter += 1
-                
-                string_dump.append(str('User ' + str(user_1) + ' (' + str(user1_id) +': ' + str(score1) + ') vs User ' +
-                            str(user_2) + ' (' + str(user2_id) +': ' + str(score2) + ')' + ' || User bias: '
-                            + str(data_array[i][2])))
-                
-                ax.set_xlabel('Δt (User 1, User 2)', fontsize=size)
-                ax.set_ylabel('Number of occurences', fontsize=size)
-                ax.tick_params(axis='both', which='both', labelsize=size)
+            example_iter += 1
 
-                new_xc = [i for i in arrays[1] if i < 0] + [i for i in arrays[2] if i >= 0]
-                new_cx = [i for i in arrays[1] if i >= 0] + [i for i in arrays[2] if i < 0]
+            string_dump.append(str('User ' + str(user_1) + ' (' + str(user1_id) +': ' + str(score1) + ') vs User ' +
+                        str(user_2) + ' (' + str(user2_id) +': ' + str(score2) + ')' + ' || User bias: '
+                        + str(data_array[i][2])))
 
-                ax.hist([arrays[0], new_xc, new_cx, arrays[3]], color=['blue', 'orange', 'green', 'red'],
-                        label=label, bins=100, stacked=True)         
-                ax.legend(prop={'size': size})
+            ax.set_xlabel('Δt (User 1, User 2)', fontsize=size)
+            ax.set_ylabel('Number of occurences', fontsize=size)
+            ax.tick_params(axis='both', which='both', labelsize=size)
 
-        new_xc = [i for i in arrays[1] if i < 0] + [i for i in arrays[2] if i >= 0]
-        new_cx = [i for i in arrays[1] if i >= 0] + [i for i in arrays[2] if i < 0]
+            new_xc = [i for i in arrays[1] if i < 0] + [i for i in arrays[2] if i >= 0]
+            new_cx = [i for i in arrays[1] if i >= 0] + [i for i in arrays[2] if i < 0]
+
+            ax.hist([arrays[0], new_xc, new_cx, arrays[3]], color=['blue', 'orange', 'green', 'red'],
+                    label=label, bins=100, stacked=True)         
+            ax.legend(prop={'size': size})
 
         total_ex = len(arrays[0]) + len(arrays[1]) + len(arrays[2]) + len(arrays[3])
                 
@@ -167,115 +238,11 @@ def generate_pairs(data_array, user_id_data, scores_data, trimming, label, plot)
             
     return user_pairs, user_score_difference, fig, string_dump, user_interaction_percentages
 
-def get_number_of_exercises(data, tol):
-    #nbr_exercises_over = sum(((x >= 0) and (x < tol)) for x in data)
-    #nbr_exercises_under = sum(((x <= 0) and (x > -tol)) for x in data)
-
-    nbr_exercises_over = 0
-    nbr_exercises_under = 0
-    
-    nbr_exercises = sum((not pd.isnull(x) and abs(x) < tol) for x in data)
-    
-    for i in range(0, len(data)):
-        x = data[i]
-        
-        if ((x >= 0) and (x < tol)):
-            nbr_exercises_over = nbr_exercises_over + 1
-        elif ((x <= 0) and (x > -tol)):
-            nbr_exercises_under = nbr_exercises_under - 1
-    
-    return nbr_exercises, nbr_exercises_over, nbr_exercises_under
-
 def return_users(pair):
     user_1 = pair[0]
     user_2 = pair[1]
     
     return user_1, user_2
-
-def type_separation(all_user_pairs, all_time_differences, tol):
-    type_array = []
-    type_1 = []
-    type_2 = []
-    
-    # This part goes over the 3 arrays inside all_user_pairs and joins the CC, XC and XX
-    # cases by searching through every pair and checking if there are matches between
-    # the arrays. Every iteration of 'outer_loop' will exclude a case, for example:
-    # The array is ordered by size. Therefore, if the order happens to be CC, then XC then XX,
-    # when the CC search is finished, it will jump for the XC and search for XX matches.
-    # When the search for XC is finished, it will add the cases where XX is alone.
-    
-    for outer_loop in range(0, 4):   
-        ARRAY_TIER = outer_loop             
-        for i in range(0, len(all_user_pairs[ARRAY_TIER])):  
-            ARRAY_TIER = outer_loop
-            
-            pair = [np.nan, np.nan, np.nan, np.nan]
-            td = [np.nan, np.nan, np.nan, np.nan]
-            nbr_ex = [np.nan, np.nan, np.nan, np.nan]
-            nbr_over = [np.nan, np.nan, np.nan, np.nan]
-            nbr_under = [np.nan, np.nan, np.nan, np.nan]
-            include_check = [np.nan, np.nan, np.nan, np.nan]
-            time_differences = [np.nan, np.nan, np.nan, np.nan]
-            users = np.zeros((4, 2))
-                       
-            users[ARRAY_TIER][0], users[ARRAY_TIER][1] = return_users(all_user_pairs[ARRAY_TIER][i])
-            nbr_ex[ARRAY_TIER], nbr_over[ARRAY_TIER], nbr_under[ARRAY_TIER] = get_number_of_exercises(all_time_differences[ARRAY_TIER][i], tol)
-            pair[ARRAY_TIER] = all_user_pairs[ARRAY_TIER][i]
-            td[ARRAY_TIER] = all_time_differences[ARRAY_TIER][i]
-
-            ARRAY_TIER = outer_loop + 1
-            if (ARRAY_TIER < 4):
-                for j in range(0, len(all_user_pairs[ARRAY_TIER])):
-                    users[ARRAY_TIER][0], users[ARRAY_TIER][1] = return_users(all_user_pairs[ARRAY_TIER][j])
-                    if ((users[outer_loop][0] == users[ARRAY_TIER][0]) and (users[outer_loop][1] == users[ARRAY_TIER][1])):
-                        nbr_ex[ARRAY_TIER], nbr_over[ARRAY_TIER], nbr_under[ARRAY_TIER] = get_number_of_exercises(all_time_differences[ARRAY_TIER][j], tol)
-                        pair[ARRAY_TIER] = all_user_pairs[ARRAY_TIER][j]
-                        td[ARRAY_TIER] = all_time_differences[ARRAY_TIER][j]
-                        all_user_pairs[ARRAY_TIER].pop(j)
-                        all_time_differences[ARRAY_TIER].pop(j)
-                        break
-            
-            ARRAY_TIER = outer_loop + 2
-            if (ARRAY_TIER < 4):
-                for k in range(0, len(all_user_pairs[ARRAY_TIER])):
-                    users[ARRAY_TIER][0], users[ARRAY_TIER][1] = return_users(all_user_pairs[ARRAY_TIER][k])
-                    if ((users[outer_loop][0] == users[ARRAY_TIER][0]) and (users[outer_loop][1] == users[ARRAY_TIER][1])):
-                        nbr_ex[ARRAY_TIER], nbr_over[ARRAY_TIER], nbr_under[ARRAY_TIER] = get_number_of_exercises(all_time_differences[ARRAY_TIER][k], tol)
-                        pair[ARRAY_TIER] = all_user_pairs[ARRAY_TIER][k]
-                        td[ARRAY_TIER] = all_time_differences[ARRAY_TIER][k]
-                        all_user_pairs[ARRAY_TIER].pop(k) 
-                        all_time_differences[ARRAY_TIER].pop(k)   
-                        break
-                        
-            ARRAY_TIER = outer_loop + 3
-            if (ARRAY_TIER < 4):
-                for l in range(0, len(all_user_pairs[ARRAY_TIER])):
-                    users[ARRAY_TIER][0], users[ARRAY_TIER][1] = return_users(all_user_pairs[ARRAY_TIER][l])
-                    if ((users[outer_loop][0] == users[ARRAY_TIER][0]) and (users[outer_loop][1] == users[ARRAY_TIER][1])):
-                        nbr_ex[ARRAY_TIER], nbr_over[ARRAY_TIER], nbr_under[ARRAY_TIER] = get_number_of_exercises(all_time_differences[ARRAY_TIER][l], tol)
-                        pair[ARRAY_TIER] = all_user_pairs[ARRAY_TIER][l]
-                        td[ARRAY_TIER] = all_time_differences[ARRAY_TIER][l]
-                        all_user_pairs[ARRAY_TIER].pop(l) 
-                        all_time_differences[ARRAY_TIER].pop(l)   
-                        break
-
-            total_ex = np.nansum(nbr_ex)
-            total_over = np.nansum(nbr_over)
-            total_under = np.nansum(nbr_under)
-
-            user_bias = (total_over + total_under) / total_ex
-            
-            type_array.append((users[outer_loop], td, user_bias, total_ex))          
-
-# DEBUG
-#            print(outer_loop, ':')
-#            print('\t User:', users[outer_loop][0], 'vs User:', users[outer_loop][1])
-#            print('\t Nbr exercises:', total_ex, 'Over:', total_over, 'Under:', total_under)
-#            print('\t User bias:', user_bias)
-    
-    #type_array.sort(key=take_third)
-    
-    return type_array
 
 def computeMetrics(tol, time_difference):
     avg_dist = np.empty((len(time_difference), len(time_difference)))
@@ -396,35 +363,45 @@ def check_material_usage(users, df):
             total_2 = 0
             material_usage_1 = 0
             material_usage_2 = 0
+            goOn = False;
+            
+            try:
+                int(df.Usuario[j])
+                goOn = True;
+            except ValueError:
+                print("Warning: invalid user identity (maybe it is empty?). Skipping user. (User:", df.Usuario[j], "Iteration:", j, ")")
+            except:
+                print("Something else went wrong.")
+            
+            if (goOn): 
+                if (int(df.Usuario[j]) == int(df.Usuario[users[i][2]])):
+                    for k in range(0, len(df.Eventos[j])):
+                        if(df.Eventos[j][k]['evento'] == 'problem_check'):
+                            if (not(df.Eventos[j][k]['id_problema'] in analysed_exercises_1)):
+                                total_1 = total_1 + 1
+                                analysed_exercises_1.append(df.Eventos[j][k]['id_problema'])
+                        else:
+                            if (df.Eventos[j][k]['evento'] != 'error_json'):
+                                material_usage_1 = material_usage_1 + 1
+                                total_1 = total_1 + 1
 
-            if (int(df.Usuario[j]) == int(df.Usuario[users[i][2]])):
-                for k in range(0, len(df.Eventos[j])):
-                    if(df.Eventos[j][k]['evento'] == 'problem_check'):
-                        if (not(df.Eventos[j][k]['id_problema'] in analysed_exercises_1)):
-                            total_1 = total_1 + 1
-                            analysed_exercises_1.append(df.Eventos[j][k]['id_problema'])
-                    else:
-                        if (df.Eventos[j][k]['evento'] != 'error_json'):
-                            material_usage_1 = material_usage_1 + 1
-                            total_1 = total_1 + 1
-                
-                material_usage_rate[i][0] = (material_usage_1/total_1)
-                #print('User 1 (', users[i][2], ') material usage rate: ', material_usage_1/total_1)
+                    material_usage_rate[i][0] = (material_usage_1/total_1)
+                    #print('User 1 (', users[i][2], ') material usage rate: ', material_usage_1/total_1)
 
-            if (int(df.Usuario[j]) == int(df.Usuario[users[i][3]])):
-                for k in range(0, len(df.Eventos[j])):
-                    if(df.Eventos[j][k]['evento'] == 'problem_check'):
-                        if (not(df.Eventos[j][k]['id_problema'] in analysed_exercises_2)):
-                            total_2 = total_2 + 1
-                            analysed_exercises_2.append(df.Eventos[j][k]['id_problema'])
-                    else:
-                        if (df.Eventos[j][k]['evento'] != 'error_json'):
-                            material_usage_2 = material_usage_2 + 1
-                            total_2 = total_2 + 1
+                if (int(df.Usuario[j]) == int(df.Usuario[users[i][3]])):
+                    for k in range(0, len(df.Eventos[j])):
+                        if(df.Eventos[j][k]['evento'] == 'problem_check'):
+                            if (not(df.Eventos[j][k]['id_problema'] in analysed_exercises_2)):
+                                total_2 = total_2 + 1
+                                analysed_exercises_2.append(df.Eventos[j][k]['id_problema'])
+                        else:
+                            if (df.Eventos[j][k]['evento'] != 'error_json'):
+                                material_usage_2 = material_usage_2 + 1
+                                total_2 = total_2 + 1
 
-                material_usage_rate[i][1] = (material_usage_2/total_2)
-                #print('User 2 (', users[i][3], ') material usage rate: ', material_usage_2/total_2)
-    
+                    material_usage_rate[i][1] = (material_usage_2/total_2)
+                    #print('User 2 (', users[i][3], ') material usage rate: ', material_usage_2/total_2)
+
     return material_usage_rate
 
 if (trimming < tol):

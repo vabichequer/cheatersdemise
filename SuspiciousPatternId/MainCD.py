@@ -53,12 +53,12 @@ from Definitions import *
 df_total = readDataFile("eventos_final.json")
 scores_csv = pd.read_csv("UAMx_Android301x_1T2015_grade_report_2015-04-21-1145_sanitized.csv")
 
-
 # In[118]:
 
 
-df = df_total#.head(500)
+df = df_total#.head(200)
 
+print('Users being processed:', len(df))
 
 # In[119]:
 
@@ -136,70 +136,57 @@ wrongExercises_minutes = wrongExercises / 60
 # In[ ]:
 
 
-dump_exists = os.path.isfile(str(tol) + '/' + str(tol) + '.csv')
+dump_exists = os.path.isfile(str(tol) + '/' + str(tol) + '.npy')
 
 if (dump_exists):
-    df_type_array = pd.read_csv(str(tol) + '/' + str(tol) + '.csv', index_col=0)
-    df_type_array.fillna('', inplace=True)
-
-    selected_users_CC = literal_eval(df_all_selected_users.loc[0][0])
-    selected_users_XC = literal_eval(df_all_selected_users.loc[1][0])
-    selected_users_CX = literal_eval(df_all_selected_users.loc[2][0])
-    selected_users_XX = literal_eval(df_all_selected_users.loc[3][0])
+    type_array = np.load(str(tol) + '/' + str(tol) + '.npy', allow_pickle=True)
     
     print('Dump loaded.')
 else:
-    #if __name__ == '__main__':
-        #__spec__ = None
-        interactions_CC = Manager().list()
-        interactions_XC = Manager().list()
-        interactions_CX = Manager().list()
-        interactions_XX = Manager().list()
-        print(hours() + 'Starting processes...')
-        print('Selecting CC users...')
-        p_CC = Process(target=countInteractions, args=(interactions_CC, tol, correctExercises_minutes, correctExercises_minutes, 'CC', N_USERS))
-        p_CC.start()
-        print('Selecting XC users...')
-        p_XC = Process(target=countInteractions_XC, args=(interactions_XC, tol, wrongExercises_minutes, correctExercises_minutes, 'XC', N_USERS))
-        p_XC.start()
-        print('Selecting CX users...')
-        p_CX = Process(target=countInteractions_CX, args=(interactions_CX, tol, correctExercises_minutes, wrongExercises_minutes, 'CX', N_USERS))
-        p_CX.start()
-        print('Selecting XX users...')
-        p_XX = Process(target=countInteractions, args=(interactions_XX, tol, wrongExercises_minutes, wrongExercises_minutes, 'XX', N_USERS))
-        p_XX.start()
+    additional = N_USERS % 4
+    const = int(((N_USERS - additional) / 4))
 
-        p_CC.join()
-        p_XC.join()
-        p_CX.join()
-        p_XX.join()
+    lims = [[0, const - 1], [const - 1, (2 * const) - 1], [(2 * const) - 1, (3 * const) - 1], [(3 * const) - 1, (4 * const) - 1 + additional]]
 
-        print(hours() + 'Saving interaction files...')
-        temp = pd.DataFrame(interactions_CC)
-        temp.to_csv(str(tol) + '/' + str(tol) + '_CC.csv')
-        temp = pd.DataFrame(interactions_XC)
-        temp.to_csv(str(tol) + '/' + str(tol) + '_XC.csv')
-        temp = pd.DataFrame(interactions_CX)
-        temp.to_csv(str(tol) + '/' + str(tol) + '_CX.csv')
-        temp = pd.DataFrame(interactions_XX)
-        temp.to_csv(str(tol) + '/' + str(tol) + '_XX.csv')
-        
-        
-        print(hours() + 'Joining interactions...')
-        type_array = join_interaction(interactions_CC, interactions_XC, interactions_CX, interactions_XX, len(df.Usuario), correctExercises_minutes, wrongExercises_minutes)
-        print(hours() + 'Finished joining interactions')
-        
-        print(hours() + 'Saving type array file...')
-        temp = pd.DataFrame(type_array)
-        temp.to_csv(str(tol) + '/' + str(tol) + '.csv')
+    print('Additional:', additional, 'Const:', const, 'Lims:', lims)
 
-        print(hours() + 'Data stored.')
+    input("Is the data correct?")
+
+    print('Dividing threads...')
+    print(lims)
+
+    print(hours() + 'Starting processes...')
+    #print('Selecting CC users...')
+    #interactions_CC = split_work(countInteractions, tol, lims, correctExercises_minutes, correctExercises_minutes, 'CC', N_USERS)
+    #print('Selecting XC users...')
+    #interactions_XC = split_work(countInteractions_XC, tol, lims, wrongExercises_minutes, correctExercises_minutes, 'XC', N_USERS)
+    #print('Selecting CX users...')
+    #interactions_CX = split_work(countInteractions_CX, tol, lims, correctExercises_minutes, wrongExercises_minutes, 'CX', N_USERS)
+    #print('Selecting XX users...')
+    #interactions_XX = split_work(countInteractions, tol, lims, wrongExercises_minutes, wrongExercises_minutes, 'XX', N_USERS)
+    
+    interactions_CC = pd.read_csv('5/5CC.csv', index_col=0).to_numpy()
+    interactions_XC = pd.read_csv('5/5XC.csv', index_col=0).to_numpy()
+    interactions_CX = pd.read_csv('5/5CX.csv', index_col=0).to_numpy()
+    interactions_XX = pd.read_csv('5/5XX.csv', index_col=0).to_numpy()
+
+
+    print(hours() + 'Joining interactions...')
+    [type_array, percentile_under_tol] = join_interaction(interactions_CC, interactions_XC, interactions_CX, interactions_XX, len(df.Usuario), correctExercises_minutes, wrongExercises_minutes)
+    print(hours() + 'Finished joining interactions')
+    
+    print(hours() + 'Saving type array file...')
+    temp = np.asarray(type_array)
+    np.save(str(tol) + '/' + str(tol) + '.npy', temp, allow_pickle=True)
+
+    print(hours() + 'Data stored.')
 
 
 # In[ ]:
 
 
 plt.hist(percentile_under_tol, bins=100)
+plt.savefig(str(tol) + '/' + str(trimming) + '-percentile_under_tol.eps')
 plt.show()
 
 
@@ -210,17 +197,17 @@ plt.show()
 
 label = ['CC', 'XC', 'CX', 'XX']
 
-user_pairs, user_score_difference, fig, string_dump, user_interaction_percentages = generate_pairs(type_array, df.Usuario, scores, trimming, label, plot=True)
+user_pairs, user_score_difference, fig, string_dump, user_interaction_percentages = generate_pairs(type_array, df.Usuario, scores, trimming, label, plot=False)
 
 with open('user_bias_dump.txt', 'w') as filehandle:
     json.dump(string_dump, filehandle)
 
 print('Done.')
 
-fig.set_size_inches(20, len(fig.axes) * 6)
-fig.tight_layout()
-plt.savefig(str(tol) + '/' + str(trimming) + '-user_bias.eps')
-plt.show()
+#fig.set_size_inches(20, len(fig.axes) * 6)
+#fig.tight_layout()
+#plt.savefig(str(tol) + '/' + str(trimming) + '-user_bias.eps')
+#plt.show()
 
 
 # # Eliminate users without a score

@@ -75,57 +75,80 @@ def take_size(elem):
 
 def hours():
     return '[' + time.strftime('%X') + ']: '
+
+def split_work(func, tol, lims, ex_1, ex_2, version, N_USERS):
+    p = [0, 0, 0, 0]
+
+    interactions = [Manager().list(), Manager().list(), Manager().list(), Manager().list()]
+    interactions_final = []
+
+    for i in range(0, 4):
+        print('Starting thread #' + str(i))
+        p[i] = Process(target=func, args=(interactions[i], tol, lims[i], ex_1, ex_2, version, N_USERS))
+        p[i].start()
     
+    for i in range(0, 4):
+        p[i].join()
+        interactions_final += interactions[i]
+
+    print('All thread finished. Final size:', len(interactions_final), 'pairs.')
+
+    print(hours() + 'Saving interaction file...')
+    temp = pd.DataFrame(np.asarray(interactions_final))
+    temp.to_csv(str(tol) + '/' + str(tol) + version + '.csv')
+    print('File saved successfully. Moving on...')
+
+    return interactions_final
+   
 
 # faster, but still slow
 # fast subtractive convolutional algorithm? Nope. Not a convolution, as it would not need to get inverted
 # Mathematical deduction on my scrapbook
-def countInteractions(interactions, tol, exercise_array_1, exercise_array_2, version, N_USERS):
-    for i in range(0, N_USERS - 1):
+def countInteractions(interactions, tol, lims, exercise_array_1, exercise_array_2, version, N_USERS):
+    for i in range(lims[0], lims[1]):
         for j in range(i + 1, N_USERS):
             time_dif = exercise_array_1[i] - exercise_array_2[j]
             
-            nbr_exercises_under = np.sum(np.abs(time_dif) < tol) #sum(abs(x) < tol for x in time_dif)
-            nbr_exercises = np.size(time_dif) - np.sum(np.isnan(time_dif)) #sum(not np.isnan(x) for x in time_dif)
+            with np.errstate(invalid='ignore'):
+                nbr_exercises_under = np.sum(np.abs(time_dif) < tol) #sum(abs(x) < tol for x in time_dif)
+                nbr_exercises = np.size(time_dif) - np.sum(np.isnan(time_dif)) #sum(not np.isnan(x) for x in time_dif)
             
             interactions.append([i, j, nbr_exercises_under, nbr_exercises])
         if (not (i % 100)):
-            print(hours() + version + ': '+ str(i) + ' (' + str(i/(N_USERS - 1)) + '% complete)')
+            print(hours() + version + ': '+ str(i) + '/' + str(lims[1]) + ' (' + str((i - lims[0]) * 100/(lims[0] - lims[1])) + '% complete)')
     print(version, 'thread finished.', version, 'added', len(interactions), 'pairs.')
     return
 
-def countInteractions_XC(interactions, tol, exercise_array_1, exercise_array_2, version, N_USERS):
-    f = open(version + '.txt', 'w')
-    for i in range(0, N_USERS - 1):
+def countInteractions_XC(interactions, tol, lims, exercise_array_1, exercise_array_2, version, N_USERS):
+    for i in range(lims[0], lims[1]):
         for j in range(i + 1, N_USERS):
             time_dif = exercise_array_1[i] - exercise_array_2[j]
-            time_dif = time_dif[time_dif <= 0]
+            with np.errstate(invalid='ignore'):
+                time_dif = time_dif[time_dif <= 0]
             
-            nbr_exercises_under = np.sum(np.abs(time_dif) < tol) #sum(abs(x) < tol for x in time_dif)
-            nbr_exercises = np.size(time_dif) - np.sum(np.isnan(time_dif)) #sum(not np.isnan(x) for x in time_dif)
+                nbr_exercises_under = np.sum(np.abs(time_dif) < tol) #sum(abs(x) < tol for x in time_dif)
+                nbr_exercises = np.size(time_dif) - np.sum(np.isnan(time_dif)) #sum(not np.isnan(x) for x in time_dif)
 
             interactions.append([i, j, nbr_exercises_under, nbr_exercises])
         if (not (i % 100)):
-            print(hours() + version + ': '+ str(i) + ' (' + str(i/(N_USERS - 1)) + '% complete)')
+            print(hours() + version + ': '+ str(i) + '/' + str(lims[1]) + ' (' + str((i - lims[0]) * 100/(lims[0] - lims[1])) + '% complete)')
     print(version, 'thread finished.', version, 'added', len(interactions), 'pairs.')
-    f.close()
     return
 
-def countInteractions_CX(interactions, tol, exercise_array_1, exercise_array_2, version, N_USERS):
-    f = open(version + '.txt', 'w')
-    for i in range(0, N_USERS - 1):
+def countInteractions_CX(interactions, tol, lims, exercise_array_1, exercise_array_2, version, N_USERS):
+    for i in range(lims[0], lims[1]):
         for j in range(i + 1, N_USERS):
             time_dif = exercise_array_1[i] - exercise_array_2[j]
-            time_dif = time_dif[time_dif >= 0]
+            with np.errstate(invalid='ignore'):
+                time_dif = time_dif[time_dif >= 0]
             
-            nbr_exercises_under = np.sum(np.abs(time_dif) < tol) #sum(abs(x) < tol for x in time_dif)
-            nbr_exercises = np.size(time_dif) - np.sum(np.isnan(time_dif)) #sum(not np.isnan(x) for x in time_dif)
+                nbr_exercises_under = np.sum(np.abs(time_dif) < tol) #sum(abs(x) < tol for x in time_dif)
+                nbr_exercises = np.size(time_dif) - np.sum(np.isnan(time_dif)) #sum(not np.isnan(x) for x in time_dif)
             
             interactions.append([i, j, nbr_exercises_under, nbr_exercises])
         if (not (i % 100)):
-            print(hours() + version + ': '+ str(i) + ' (' + str(i/(N_USERS - 1)) + '% complete)')
+            print(hours() + version + ': '+ str(i) + '/' + str(lims[1]) + ' (' + str((i - lims[0]) * 100/(lims[0] - lims[1])) + '% complete)')
     print(version, 'thread finished.', version, 'added', len(interactions), 'pairs.')
-    f.close()
     return
 
 def get_number_of_exercises(td, tol):
@@ -149,7 +172,7 @@ def join_interaction(int_CC, int_XC, int_CX, int_XX, amount_users, x_exer, c_exe
     
     for idx in range(0, len(int_CC)):
         if (not (idx % 1000)):
-            print(hours() + str(idx) + ' (' + str(idx/len(int_CC)) + '% complete)')
+            print(hours() + str(idx) + ' (' + str(idx * 100/len(int_CC)) + '% complete)')
         nbr_exer_inside_tol = int_CC[idx][2] + int_XC[idx][2] + int_CX[idx][2] + int_XX[idx][2]
         nbr_exer = int_CC[idx][3] + int_XC[idx][3] + int_CX[idx][3] + int_XX[idx][3]
 
@@ -178,10 +201,6 @@ def generate_pairs(data_array, user_id_data, scores_data, trimming, label, plot)
     user_score_difference = []
     
     user_interaction_percentages = []
-    
-    example = ['(A)', '(B)', '(C)']
-
-    example_iter = 0
 
     for i in range(0, len(data_array)):
         arrays = [[], [], [], []]           
@@ -213,9 +232,9 @@ def generate_pairs(data_array, user_id_data, scores_data, trimming, label, plot)
 
             size = 25
 
-            ax.set_title(example[example_iter] + str(user_1), fontsize=size)
-
-            example_iter += 1
+            ax.set_title('User ' + str(user_1) + ' (' + str(user1_id) +': ' + str(score1) + ') vs User ' +
+                          str(user_2) + ' (' + str(user2_id) +': ' + str(score2) + ')' + ' || User bias: '
+                         + str(data_array[i][2]), fontsize=13)
 
             string_dump.append(str('User ' + str(user_1) + ' (' + str(user1_id) +': ' + str(score1) + ') vs User ' +
                         str(user_2) + ' (' + str(user2_id) +': ' + str(score2) + ')' + ' || User bias: '
@@ -231,6 +250,9 @@ def generate_pairs(data_array, user_id_data, scores_data, trimming, label, plot)
             ax.hist([arrays[0], new_xc, new_cx, arrays[3]], color=['blue', 'orange', 'green', 'red'],
                     label=label, bins=100, stacked=True)         
             ax.legend(prop={'size': size})
+
+        new_xc = [i for i in arrays[1] if i < 0] + [i for i in arrays[2] if i >= 0]
+        new_cx = [i for i in arrays[1] if i >= 0] + [i for i in arrays[2] if i < 0]
 
         total_ex = len(arrays[0]) + len(arrays[1]) + len(arrays[2]) + len(arrays[3])
                 

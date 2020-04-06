@@ -1,0 +1,6 @@
+Libraries and definitions loaded correctly.
+Libraries and definitions loaded correctly.
+Logging scores...
+Finished logging scores.
+Logging exercises...
+Ended logging.

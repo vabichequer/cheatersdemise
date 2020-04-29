@@ -42,7 +42,7 @@ N_EXERCISES = 196
 MIN_EXERCISES_PERCENTAGE = 0.9
 
 # Time tolerance for exercises
-tol = 5
+tol = 10
 trimming = tol #math.inf
 
 cluster_tag = 'all'
@@ -77,28 +77,39 @@ def hours():
     return '[' + time.strftime('%X') + ']: '
 
 def split_work(func, tol, lims, ex_1, ex_2, version, N_USERS):
-    p = [0, 0, 0, 0]
+    dump_exists = os.path.isfile(str(tol) + '/' + str(tol) + version + '.npy')
 
-    interactions = [Manager().list(), Manager().list(), Manager().list(), Manager().list()]
-    interactions_final = []
+    if (dump_exists):
+        print("Dump found. Loading...")
+        
+        temp = np.load(str(tol) + '/' + str(tol) + version + '.npy', allow_pickle=True)
+        
+        print("Dump loaded.")
 
-    for i in range(0, 4):
-        print('Starting thread #' + str(i))
-        p[i] = Process(target=func, args=(interactions[i], tol, lims[i], ex_1, ex_2, version, N_USERS))
-        p[i].start()
-    
-    for i in range(0, 4):
-        p[i].join()
-        interactions_final += interactions[i]
+        return temp
+    else:
+        p = [0, 0, 0, 0]
 
-    print('All thread finished. Final size:', len(interactions_final), 'pairs.')
+        interactions = [Manager().list(), Manager().list(), Manager().list(), Manager().list()]
+        interactions_final = []
 
-    print(hours() + 'Saving interaction file...')
-    temp = pd.DataFrame(np.asarray(interactions_final))
-    temp.to_csv(str(tol) + '/' + str(tol) + version + '.csv')
-    print('File saved successfully. Moving on...')
+        for i in range(0, 4):
+            print('Starting thread #' + str(i))
+            p[i] = Process(target=func, args=(interactions[i], tol, lims[i], ex_1, ex_2, version, N_USERS))
+            p[i].start()
+        
+        for i in range(0, 4):
+            p[i].join()
+            interactions_final += interactions[i]
 
-    return interactions_final
+        print('All thread finished. Final size:', len(interactions_final), 'pairs.')
+
+        print(hours() + 'Saving interaction file...')
+        temp = np.asarray(interactions_final)
+        np.save(str(tol) + '/' + str(tol) + version + '.npy', temp, allow_pickle=True)
+        print('File saved successfully. Moving on...')
+
+        return interactions_final
    
 
 # faster, but still slow
@@ -157,14 +168,21 @@ def get_number_of_exercises(td, tol):
 
     nbr_exercises_over = 0
     nbr_exercises_under = 0
+    nbr_exercises = 0
+
+    td = np.asarray(td)
 
     for k in range(0, len(td)):
         a = td[k]
-
+        
+        t = a[np.invert(np.isnan(a))]
+        t = t[t < tol]
+        t = t[t > -tol]
+        nbr_exercises += np.size(t)
         nbr_exercises_over += np.size(a[(a >= 0) & (a < tol)])
-        nbr_exercises_under -= np.size(a[(a <= 0) & (a > -tol)])
+        nbr_exercises_under -= np.size(a[(a < 0) & (a > -tol)])
 
-    return nbr_exercises_over, nbr_exercises_under
+    return nbr_exercises, nbr_exercises_over, nbr_exercises_under
 
 def join_interaction(int_CC, int_XC, int_CX, int_XX, amount_users, x_exer, c_exer):
     type_array = []
@@ -182,11 +200,11 @@ def join_interaction(int_CC, int_XC, int_CX, int_XX, amount_users, x_exer, c_exe
                 i = int_CC[idx][0]
                 j = int_CC[idx][1]
                 td = [c_exer[i] - c_exer[j], x_exer[i] - c_exer[j], c_exer[i] - x_exer[j], x_exer[i] - x_exer[j]]
-                [total_over, total_under] = get_number_of_exercises(td, tol)
+                [nbr_ex_total, total_over, total_under] = get_number_of_exercises(td, tol)
 
-                user_bias = (total_over + total_under) / nbr_exer
+                user_bias = (total_over + total_under) / nbr_ex_total
 
-                type_array.append(([i, j], td, user_bias, nbr_exer))   
+                type_array.append(([i, j], td, user_bias, nbr_ex_total))   
           
     return type_array, percentile_under_tol            
                                 

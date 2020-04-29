@@ -138,9 +138,12 @@ wrongExercises_minutes = wrongExercises / 60
 
 dump_exists = os.path.isfile(str(tol) + '/' + str(tol) + '.npy')
 
-if (dump_exists):
+if (dump_exists):    
+    print(hours() + 'Loading type array file...')
+
     type_array = np.load(str(tol) + '/' + str(tol) + '.npy', allow_pickle=True)
-    
+    percentile_under_tol = np.load(str(tol) + '/' + str(tol) + 'percentile_under_tol.npy', allow_pickle=True)
+
     print('Dump loaded.')
 else:
     additional = N_USERS % 4
@@ -150,26 +153,20 @@ else:
 
     print('Additional:', additional, 'Const:', const, 'Lims:', lims)
 
-    input("Is the data correct?")
+    #input("Is the data correct?")
 
     print('Dividing threads...')
     print(lims)
 
     print(hours() + 'Starting processes...')
-    #print('Selecting CC users...')
-    #interactions_CC = split_work(countInteractions, tol, lims, correctExercises_minutes, correctExercises_minutes, 'CC', N_USERS)
-    #print('Selecting XC users...')
-    #interactions_XC = split_work(countInteractions_XC, tol, lims, wrongExercises_minutes, correctExercises_minutes, 'XC', N_USERS)
-    #print('Selecting CX users...')
-    #interactions_CX = split_work(countInteractions_CX, tol, lims, correctExercises_minutes, wrongExercises_minutes, 'CX', N_USERS)
-    #print('Selecting XX users...')
-    #interactions_XX = split_work(countInteractions, tol, lims, wrongExercises_minutes, wrongExercises_minutes, 'XX', N_USERS)
-    
-    interactions_CC = pd.read_csv('5/5CC.csv', index_col=0).to_numpy()
-    interactions_XC = pd.read_csv('5/5XC.csv', index_col=0).to_numpy()
-    interactions_CX = pd.read_csv('5/5CX.csv', index_col=0).to_numpy()
-    interactions_XX = pd.read_csv('5/5XX.csv', index_col=0).to_numpy()
-
+    print('Selecting CC users...')
+    interactions_CC = split_work(countInteractions, tol, lims, correctExercises_minutes, correctExercises_minutes, 'CC', N_USERS)
+    print('Selecting XC users...')
+    interactions_XC = split_work(countInteractions_XC, tol, lims, wrongExercises_minutes, correctExercises_minutes, 'XC', N_USERS)
+    print('Selecting CX users...')
+    interactions_CX = split_work(countInteractions_CX, tol, lims, correctExercises_minutes, wrongExercises_minutes, 'CX', N_USERS)
+    print('Selecting XX users...')
+    interactions_XX = split_work(countInteractions, tol, lims, wrongExercises_minutes, wrongExercises_minutes, 'XX', N_USERS)
 
     print(hours() + 'Joining interactions...')
     [type_array, percentile_under_tol] = join_interaction(interactions_CC, interactions_XC, interactions_CX, interactions_XX, len(df.Usuario), correctExercises_minutes, wrongExercises_minutes)
@@ -178,15 +175,17 @@ else:
     print(hours() + 'Saving type array file...')
     temp = np.asarray(type_array)
     np.save(str(tol) + '/' + str(tol) + '.npy', temp, allow_pickle=True)
+    temp = np.asarray(percentile_under_tol)
+    np.save(str(tol) + '/' + str(tol) + 'percentile_under_tol.npy', temp, allow_pickle=True)
 
     print(hours() + 'Data stored.')
 
 
 # In[ ]:
 
-
 plt.hist(percentile_under_tol, bins=100)
-plt.savefig(str(tol) + '/' + str(trimming) + '-percentile_under_tol.eps')
+plt.yscale('log')
+plt.savefig(str(tol) + '/' + str(trimming) + '-percentile_under_tol.png')
 plt.show()
 
 
@@ -281,11 +280,18 @@ axes.set_ylim([-1.1, 1.1])
 plt.xticks(fontsize=20)
 
 plt.grid(color='grey', linestyle='--', linewidth=.5)
-
 plt.savefig(str(tol) + '/' + str(trimming) + '-amount_of_exercises.png', bbox_inches='tight')
 
 #plt.show()
 
+plt.figure(figsize=(15, 10))
+plt.hist(total_exercises_under_tol, bins=np.arange(total_exercises_under_tol.max()) - 0.5, ec='black')
+plt.yscale('log')
+plt.xticks(range(total_exercises_under_tol.max() - 1), rotation=90)
+plt.xlim([-1, total_exercises_under_tol.max() - 1])
+plt.savefig(str(tol) + '/' + str(trimming) + '-total_exercises_under_tol.png')
+
+np.savetxt("exercise_dump.txt", total_exercises_under_tol)
 
 # # Plot the distance from optimal curve (X^9) and separate outliers
 
@@ -336,7 +342,7 @@ plt.savefig(str(tol) + '/' + str(trimming) + '-distance_from_curve.png')
 # In[ ]:
 
 
-FLAG = 'outliers'
+FLAG = 'both'
 
 if (FLAG == 'outliers'):
     array_being_analysed = outliers

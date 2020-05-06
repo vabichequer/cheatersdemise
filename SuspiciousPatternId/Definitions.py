@@ -42,7 +42,7 @@ N_EXERCISES = 196
 MIN_EXERCISES = 10
 
 # Time tolerance for exercises
-tol = 2
+tol = 10
 trimming = tol #math.inf
 
 cluster_tag = 'all'
@@ -147,7 +147,7 @@ def generate_pairs(data_array, user_id_data, scores_data, trimming, label, plot)
                             str(user_2) + ' (' + str(user2_id) +': ' + str(score2) + ')' + ' || User bias: '
                             + str(data_array[i][2])))
                 
-                ax.set_xlabel('Δt (User 1, User 2)', fontsize=size)
+                ax.set_xlabel('dt (User 1, User 2)', fontsize=size)
                 ax.set_ylabel('Number of occurences', fontsize=size)
                 ax.tick_params(axis='both', which='both', labelsize=size)
 

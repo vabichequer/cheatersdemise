@@ -42,7 +42,12 @@ N_EXERCISES = 196
 MIN_EXERCISES_PERCENTAGE = 0.9
 
 # Time tolerance for exercises
-tol = 10
+try:
+    tol = int(sys.argv[1])
+    print('Running with time tolerance of ' + str(sys.argv[1]))
+except:
+    sys.exit('No time tolerance argument. Exiting...')
+
 trimming = tol #math.inf
 
 cluster_tag = 'all'
@@ -345,49 +350,21 @@ def check_ip_addresses(users, df):
     for i in range(0, len(users)):
         temp_1 = []
         temp_2 = []
-        count_1 = []
-        count_2 = []
-        unique_ex_1 = []
-        unique_ex_2 = []
         
         for j in range(1, len(df_ip.Usuario)):
             if (int(df_ip.Usuario[j]) == int(df.Usuario[users[i][2]])):
                 for k in range(0, len(df_ip.Eventos[j])):
                     if(df_ip.Eventos[j][k]['evento'] == 'problem_check'):
-                        if (len(temp_1) > 0):
-                            if (df_ip.Eventos[j][k]['ip'] in temp_1):
-                                if (not (df_ip.Eventos[j][k]['id_problema']) in unique_ex_1):
-                                    index = temp_1.index(df_ip.Eventos[j][k]['ip'])
-                                    count_1[index] = count_1[index] + 1
-                                    unique_ex_1.append(df_ip.Eventos[j][k]['id_problema'])
-                            else:
-                                temp_1.append(df_ip.Eventos[j][k]['ip'])
-                                count_1.append(1)
-                                unique_ex_1.append(df_ip.Eventos[j][k]['id_problema'])
-                        else:
+                        if (df_ip.Eventos[j][k]['ip'] in temp_1):
                             temp_1.append(df_ip.Eventos[j][k]['ip'])
-                            count_1.append(1)
-                            unique_ex_1.append(df_ip.Eventos[j][k]['id_problema'])
                             
             if (int(df_ip.Usuario[j]) == int(df.Usuario[users[i][3]])):
                 for k in range(0, len(df_ip.Eventos[j])):
                     if(df_ip.Eventos[j][k]['evento'] == 'problem_check'):
-                        if (len(temp_2) > 0):
-                            if (df_ip.Eventos[j][k]['ip'] in temp_2):
-                                if (not (df_ip.Eventos[j][k]['id_problema']) in unique_ex_2):
-                                    index = temp_2.index(df_ip.Eventos[j][k]['ip'])
-                                    count_2[index] = count_2[index] + 1
-                                    unique_ex_2.append(df_ip.Eventos[j][k]['id_problema'])
-                            else:
-                                temp_2.append(df_ip.Eventos[j][k]['ip'])
-                                count_2.append(1)
-                                unique_ex_2.append(df_ip.Eventos[j][k]['id_problema'])
-                        else:
+                        if (df_ip.Eventos[j][k]['ip'] not in temp_2):
                             temp_2.append(df_ip.Eventos[j][k]['ip'])
-                            count_2.append(1)
-                            unique_ex_2.append(df_ip.Eventos[j][k]['id_problema'])
      
-        ip_addrs.append([temp_1, temp_2, count_1, count_2])
+        ip_addrs.append([temp_1, temp_2])
 
     return ip_addrs
 

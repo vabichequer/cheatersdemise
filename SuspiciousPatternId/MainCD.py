@@ -65,19 +65,6 @@ print('Users being processed:', len(df))
 
 N_USERS = len(df.Usuario)
 
-# create the exercise list
-correctExercises = np.empty((N_USERS, N_EXERCISES))
-correctExercises.fill(np.nan)
-
-correctExercisesCount = np.empty(N_USERS)
-correctExercisesCount.fill(0)
-
-wrongExercises = np.empty((N_USERS, N_EXERCISES))
-wrongExercises.fill(np.nan)
-
-wrongExercisesCount = np.empty(N_USERS)
-wrongExercisesCount.fill(0)
-
 scores = []
 
 print("Logging scores...")
@@ -93,48 +80,65 @@ for i in range(1, len(df.Usuario)):
     #print('Scores:', math.ceil(i*100/len(df.Usuario)), '% done')
 
 print("Finished logging scores.")
+
 print("Logging exercises...")
 
-for i in range(0, len(df.Usuario)):
-    for j in range(0, len(df.Eventos[i])):
-        if (df.Eventos[i][j]['evento'] == 'problem_check'):
-            #print('\t problem_check')
-            if (df.Eventos[i][j]['resultados'] != []):
-                #print('\t \t results')
-                # convert date time to epoch time for a better comparison
-                time_split = df.Eventos[i][j]['tiempo'].split('T')
-                time_tuple = time.strptime(time_split[0] + ' ' + time_split[1][:8], date_format)
-                time_epoch = time.mktime(time_tuple)   
-                if(df.Eventos[i][j]['resultados'][0]['correcto'] == 'True'):
-                    #print('\t \t \t right')
-                    correctExercises[i][int(df.Eventos[i][j]['id_problema']) - 1] = time_epoch
-                    correctExercisesCount[i] = correctExercisesCount[i] + 1
-                elif(df.Eventos[i][j]['resultados'][0]['correcto'] == 'False'):
-                    #print('\t \t \t wrong')
-                    wrongExercises[i][int(df.Eventos[i][j]['id_problema']) - 1] = time_epoch
-                    num_intentos = int(df.Eventos[i][j]['num_intentos'])
-                    wrongExercisesCount[i] = (wrongExercisesCount[i] - num_intentos + 1) + num_intentos
-    #clear()
-    #print('Exercises:', math.ceil(i*100/N_USERS), '% done')
+exercise_dump_exists = os.path.isfile('correct_exercises.npy')
+
+if (exercise_dump_exists):
+    correctExercises = np.load('correct_exercises.npy', allow_pickle=True)
+    correctExercisesCount = np.load('correct_exercises_count.npy', allow_pickle=True)
+    wrongExercises = np.load('wrong_exercises.npy', allow_pickle=True)
+    wrongExercisesCount = np.load('wrong_exercises_count.npy', allow_pickle=True)
+else:
+    # create the exercise list
+    correctExercises = np.empty((N_USERS, N_EXERCISES))
+    correctExercises.fill(np.nan)
+
+    correctExercisesCount = np.empty(N_USERS)
+    correctExercisesCount.fill(0)
+
+    wrongExercises = np.empty((N_USERS, N_EXERCISES))
+    wrongExercises.fill(np.nan)
+
+    wrongExercisesCount = np.empty(N_USERS)
+    wrongExercisesCount.fill(0)
+
+    for i in range(0, len(df.Usuario)):
+        for j in range(0, len(df.Eventos[i])):
+            if (df.Eventos[i][j]['evento'] == 'problem_check'):
+                #print('\t problem_check')
+                if (df.Eventos[i][j]['resultados'] != []):
+                    #print('\t \t results')
+                    # convert date time to epoch time for a better comparison
+                    time_split = df.Eventos[i][j]['tiempo'].split('T')
+                    time_tuple = time.strptime(time_split[0] + ' ' + time_split[1][:8], date_format)
+                    time_epoch = time.mktime(time_tuple)   
+                    if(df.Eventos[i][j]['resultados'][0]['correcto'] == 'True'):
+                        #print('\t \t \t right')
+                        correctExercises[i][int(df.Eventos[i][j]['id_problema']) - 1] = time_epoch
+                        correctExercisesCount[i] = correctExercisesCount[i] + 1
+                    elif(df.Eventos[i][j]['resultados'][0]['correcto'] == 'False'):
+                        #print('\t \t \t wrong')
+                        wrongExercises[i][int(df.Eventos[i][j]['id_problema']) - 1] = time_epoch
+                        num_intentos = int(df.Eventos[i][j]['num_intentos'])
+                        wrongExercisesCount[i] = (wrongExercisesCount[i] - num_intentos + 1) + num_intentos
+        #clear()
+        #print('Exercises:', math.ceil(i*100/N_USERS), '% done')
+
+    np.save('correct_exercises.npy', correctExercises, allow_pickle=True)
+    np.save('correct_exercises_count.npy', correctExercisesCount, allow_pickle=True)
+    np.save('wrong_exercises.npy', wrongExercises, allow_pickle=True)
+    np.save('wrong_exercises_count.npy', wrongExercisesCount, allow_pickle=True)
 
 print('Ended logging.')
 
 N_USERS = len(df)
 
-
-# In[122]:
-
-
 N_USERS = len(df.Usuario)
 
 correctExercises_minutes = correctExercises / 60
 wrongExercises_minutes = wrongExercises / 60
-
-
-# # Select users
-
-# In[ ]:
-
 
 dump_exists = os.path.isfile(str(tol) + '/' + str(tol) + '.npy')
 
@@ -205,17 +209,6 @@ print('Done.')
 
 
 # # Eliminate users without a score
-
-# In[ ]:
-
-
-type_array_bkp = np.array(type_array)
-
-
-# In[ ]:
-
-
-type_array = type_array_bkp
 user_score_difference = np.array(user_score_difference)
 
 total_exercises_under_tol = type_array[:, 3]
@@ -240,91 +233,6 @@ while i < len(analysing_data):
         i = i + 1
 
 print(tol, len(user_pairs_copy), 'pairs remaining.')
-
-ip_addrs = check_ip_addresses(array_being_analysed, df)
-
-ips_in_common = []
-
-for i in range(0, len(ip_addrs)):
-    user_1_ips = ip_addrs[i][0]
-    user_2_ips = ip_addrs[i][1]
-    count_1 = ip_addrs[i][2]
-    count_2 = ip_addrs[i][3]
-    amount = 0
-    for j in range(0, len(user_1_ips)):
-        for k in range(0, len(user_2_ips)):
-            if (user_1_ips[j] == user_2_ips[k]):
-                amount = amount + min(count_1[j], count_2[k])
-    #print('-'*100)
-    #print('User 1 (', array_being_analysed[i][2], ',', len(user_1_ips), '): ', user_1_ips, count_1)
-    #print('User 2 (', array_being_analysed[i][3], ',', len(user_2_ips), '): ', user_2_ips, count_2)
-    #print('\nCorrelation: ', amount, np.intersect1d(user_1_ips, user_2_ips, assume_unique=True))
-    ips_in_common.append(amount)
-
-plt.figure(figsize=(10, 7))
-plt.xlabel('User bias', fontsize=25)
-plt.ylabel('Course final score difference between users', fontsize=25)
-plt.title("Exercises with the same IP", fontsize=25)
-
-scatter = plt.scatter(array_being_analysed[:, 0], array_being_analysed[:, 1], edgecolors = 'black', c=ips_in_common, cmap='binary')
-
-plt.colorbar(scatter)
-
-i = 0
-while i < len(ips_in_common):
-    if(ips_in_common[i] < 1 or ips_in_common[i] > 10):
-        user_pairs_copy.pop(i)
-        user_interaction_percentages.pop(i)
-        user_score_difference = np.delete(user_score_difference, i, 0)
-        analysing_data = np.delete(analysing_data, i, 0)
-        total_exercises_under_tol = np.delete(total_exercises_under_tol, i, 0)
-        percentile_under_tol = np.delete(percentile_under_tol, i, 0)
-    else:
-        i = i + 1
-
-plt.hist(percentile_under_tol, bins=100)
-plt.yscale('log')
-plt.savefig(str(tol) + '/' + str(trimming) + '-percentile_under_tol.png')
-plt.show()
-# ## Plot the amout of exercise by user through the whole dataset
-
-# In[ ]:
-
-
-plt.figure(figsize=(10, 7))
-plt.xlabel('User bias', fontsize=25)
-plt.ylabel('Score difference', fontsize=25)
-plt.title("Amount of exercises by user", fontsize=25)
-
-scatter = plt.scatter(analysing_data[:, 0], analysing_data[:, 1], s=250, edgecolors = 'black', c=total_exercises_under_tol, cmap='binary')
-
-plt.colorbar(scatter)
-
-#for i, txt in enumerate(user_pairs_copy):
-#    plt.annotate(txt, (analysing_data[i, 0], analysing_data[i, 1]))
-
-x = np.linspace(-1, 1, 201)
-y = [pow(i, 9) for i in x]
-plt.plot(x, y)
-
-axes = plt.gca()
-axes.set_xlim([-1.1, 1.1])
-axes.set_ylim([-1.1, 1.1])
-plt.xticks(fontsize=20)
-
-plt.grid(color='grey', linestyle='--', linewidth=.5)
-plt.savefig(str(tol) + '/' + str(trimming) + '-amount_of_exercises.png', bbox_inches='tight')
-
-#plt.show()
-
-plt.figure(figsize=(15, 10))
-plt.hist(total_exercises_under_tol, bins=np.arange(total_exercises_under_tol.max()) - 0.5, ec='black')
-plt.yscale('log')
-plt.xticks(range(total_exercises_under_tol.max() - 1), rotation=90)
-plt.xlim([-1, total_exercises_under_tol.max() - 1])
-plt.savefig(str(tol) + '/' + str(trimming) + '-total_exercises_under_tol.png')
-
-np.savetxt("exercise_dump.txt", total_exercises_under_tol)
 
 # # Plot the distance from optimal curve (X^9) and separate outliers
 
@@ -384,6 +292,89 @@ elif (FLAG == 'normals'):
 else:
     array_being_analysed = np.concatenate((normal_points, outliers), axis=0)
 
+## Checking ip addresses
+
+ip_dump_exists = os.path.isfile(str(tol) + '/' + str(tol) + '_ip_addrs.npy')
+
+if (ip_dump_exists):    
+    print(hours() + 'Loading IP dump file...')
+    ip_addrs = np.load(str(tol) + '/' + str(tol) + '_ip_addrs.npy', allow_pickle=True)
+else:
+    ip_addrs = check_ip_addresses(array_being_analysed, df)
+    temp = np.asarray(ip_addrs)
+    np.save(str(tol) + '/' + str(tol) + '_ip_addrs.npy', temp, allow_pickle=True)
+
+ips_in_common = []
+ips_in_common_count = []
+
+for i in range(0, len(ip_addrs)):
+    user_1_ips = ip_addrs[i][0]
+    user_2_ips = ip_addrs[i][1]
+    for j in range(0, len(user_1_ips)):
+        if (user_1_ips[j] not in ips_in_common):
+            ips_in_common.append(user_1_ips[j])
+            ips_in_common_count.append(1)
+        else: 
+            idx = ips_in_common.index(user_1_ips[j])
+            ips_in_common_count[idx] += 1
+            
+    for k in range(0, len(user_2_ips)):
+        if (user_2_ips[k] not in ips_in_common):
+            ips_in_common.append(user_2_ips[k])
+            ips_in_common_count.append(1)
+        else: 
+            idx = ips_in_common.index(user_2_ips[k])
+            ips_in_common_count[idx] += 1
+
+shared_ips = []
+
+for i in range(0, len(ip_addrs)):
+    user_1_ips = ip_addrs[i][0]
+    user_2_ips = ip_addrs[i][1]
+    count_1 = [0]
+    count_2 = [0]
+
+    for j in range(0, len(user_1_ips)):
+        idx = ips_in_common.index(user_1_ips[j])
+        count_1.append(ips_in_common_count[idx])
+            
+    for j in range(0, len(user_2_ips)):
+        idx = ips_in_common.index(user_2_ips[j])
+        count_2.append(ips_in_common_count[idx])
+
+    shared_ips.append(max(max(count_1), max(count_2)))
+
+## Eliminate pairs that do not meet the shared IP metric
+
+i = 0
+while i < len(shared_ips):
+    if(shared_ips[i] == 1 or shared_ips[i] > 10):
+        total_exercises_under_tol = np.delete(total_exercises_under_tol, i, 0)
+        percentile_under_tol = np.delete(percentile_under_tol, i, 0)
+        shared_ips.pop(i)
+    else:
+        i = i + 1
+
+plt.figure(figsize=(10, 7))
+plt.hist(percentile_under_tol, bins=100)
+plt.yscale('log')
+plt.savefig(str(tol) + '/' + str(trimming) + '-percentile_under_tol.png')
+plt.show()
+
+#plt.show()
+
+plt.figure(figsize=(15, 10))
+plt.hist(total_exercises_under_tol, bins=np.arange(total_exercises_under_tol.max()) - 0.5, ec='black')
+plt.yscale('log')
+plt.xticks(range(total_exercises_under_tol.max() - 1), rotation=90)
+plt.xlim([-1, total_exercises_under_tol.max() - 1])
+plt.savefig(str(tol) + '/' + str(trimming) + '-total_exercises_under_tol.png')
+
+np.savetxt("exercise_dump.txt", total_exercises_under_tol)
+
+print("Plotted.")
+
+sys.exit()
 
 # # Plot the hypotheses regions
 
@@ -461,7 +452,7 @@ plt.savefig(str(tol) + '/' + str(trimming) + '-hypotheses.png', bbox_inches='tig
 
 
 
-#for i, txt in enumerate(ips_in_common):
+#for i, txt in enumerate(ips_exercises_in_common):
     #plt.annotate((txt, (array_being_analysed[i, 2], array_being_analysed[i, 3])), (array_being_analysed[i, 0], array_being_analysed[i, 1]))
 
 x = np.linspace(-1, 1, 201)

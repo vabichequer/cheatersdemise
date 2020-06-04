@@ -183,11 +183,6 @@ else:
 
 # In[ ]:
 
-plt.hist(percentile_under_tol, bins=100)
-plt.yscale('log')
-plt.savefig(str(tol) + '/' + str(trimming) + '-percentile_under_tol.png')
-plt.show()
-
 
 # # Calculate user bias and pairs through the type arrays
 
@@ -246,13 +241,51 @@ while i < len(analysing_data):
 
 print(tol, len(user_pairs_copy), 'pairs remaining.')
 
+ip_addrs = check_ip_addresses(array_being_analysed, df)
 
-# In[ ]:
+ips_in_common = []
 
+for i in range(0, len(ip_addrs)):
+    user_1_ips = ip_addrs[i][0]
+    user_2_ips = ip_addrs[i][1]
+    count_1 = ip_addrs[i][2]
+    count_2 = ip_addrs[i][3]
+    amount = 0
+    for j in range(0, len(user_1_ips)):
+        for k in range(0, len(user_2_ips)):
+            if (user_1_ips[j] == user_2_ips[k]):
+                amount = amount + min(count_1[j], count_2[k])
+    #print('-'*100)
+    #print('User 1 (', array_being_analysed[i][2], ',', len(user_1_ips), '): ', user_1_ips, count_1)
+    #print('User 2 (', array_being_analysed[i][3], ',', len(user_2_ips), '): ', user_2_ips, count_2)
+    #print('\nCorrelation: ', amount, np.intersect1d(user_1_ips, user_2_ips, assume_unique=True))
+    ips_in_common.append(amount)
 
-user_score_difference
+plt.figure(figsize=(10, 7))
+plt.xlabel('User bias', fontsize=25)
+plt.ylabel('Course final score difference between users', fontsize=25)
+plt.title("Exercises with the same IP", fontsize=25)
 
+scatter = plt.scatter(array_being_analysed[:, 0], array_being_analysed[:, 1], edgecolors = 'black', c=ips_in_common, cmap='binary')
 
+plt.colorbar(scatter)
+
+i = 0
+while i < len(ips_in_common):
+    if(ips_in_common[i] < 1 or ips_in_common[i] > 10):
+        user_pairs_copy.pop(i)
+        user_interaction_percentages.pop(i)
+        user_score_difference = np.delete(user_score_difference, i, 0)
+        analysing_data = np.delete(analysing_data, i, 0)
+        total_exercises_under_tol = np.delete(total_exercises_under_tol, i, 0)
+        percentile_under_tol = np.delete(percentile_under_tol, i, 0)
+    else:
+        i = i + 1
+
+plt.hist(percentile_under_tol, bins=100)
+plt.yscale('log')
+plt.savefig(str(tol) + '/' + str(trimming) + '-percentile_under_tol.png')
+plt.show()
 # ## Plot the amout of exercise by user through the whole dataset
 
 # In[ ]:
@@ -426,40 +459,7 @@ plt.savefig(str(tol) + '/' + str(trimming) + '-hypotheses.png', bbox_inches='tig
 # In[ ]:
 
 
-ip_addrs = check_ip_addresses(array_being_analysed, df)
 
-ips_in_common = []
-
-for i in range(0, len(ip_addrs)):
-    user_1_ips = ip_addrs[i][0]
-    user_2_ips = ip_addrs[i][1]
-    count_1 = ip_addrs[i][2]
-    count_2 = ip_addrs[i][3]
-    amount = 0
-    for j in range(0, len(user_1_ips)):
-        for k in range(0, len(user_2_ips)):
-            if ((user_1_ips[j] == user_2_ips[k]) == True):
-                amount = amount + min(count_1[j], count_2[k])
-    #print('-'*100)
-    #print('User 1 (', array_being_analysed[i][2], ',', len(user_1_ips), '): ', user_1_ips, count_1)
-    #print('User 2 (', array_being_analysed[i][3], ',', len(user_2_ips), '): ', user_2_ips, count_2)
-    #print('\nCorrelation: ', amount, np.intersect1d(user_1_ips, user_2_ips, assume_unique=True))
-    ips_in_common.append(amount)
-
-
-# # Plot checked users
-
-# In[ ]:
-
-
-plt.figure(figsize=(10, 7))
-plt.xlabel('User bias', fontsize=25)
-plt.ylabel('Course final score difference between users', fontsize=25)
-plt.title("Exercises with the same IP", fontsize=25)
-
-scatter = plt.scatter(array_being_analysed[:, 0], array_being_analysed[:, 1], edgecolors = 'black', c=ips_in_common, cmap='binary')
-
-plt.colorbar(scatter)
 
 #for i, txt in enumerate(ips_in_common):
     #plt.annotate((txt, (array_being_analysed[i, 2], array_being_analysed[i, 3])), (array_being_analysed[i, 0], array_being_analysed[i, 1]))

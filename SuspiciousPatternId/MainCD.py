@@ -368,8 +368,8 @@ plt.hist(total_exercises_under_tol, bins=np.arange(total_exercises_under_tol.max
 plt.yscale('log')
 plt.xticks(range(total_exercises_under_tol.max() + 1), rotation=90)
 plt.xlim([-1, total_exercises_under_tol.max() + 1])
-plt.xlabel("Amount of pairs", fontsize=20)
-plt.ylabel("Exercises in common", fontsize=20)
+plt.ylabel("Amount of pairs", fontsize=20)
+plt.xlabel("Exercises in common", fontsize=20)
 plt.savefig(str(tol) + '/' + str(trimming) + '-total_exercises_under_tol.png')
 
 print("Total number of pairs: ", len(total_exercises_under_tol))

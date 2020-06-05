@@ -378,6 +378,8 @@ np.savetxt("exercise_dump.txt", total_exercises_under_tol)
 
 print("Plotted.")
 
+np.save(str(tol) + '/' + str(tol) + '-teut.npy', total_exercises_under_tol, allow_pickle=True)
+
 sys.exit()
 
 # # Plot the hypotheses regions

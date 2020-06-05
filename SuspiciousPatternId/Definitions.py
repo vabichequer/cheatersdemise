@@ -42,7 +42,11 @@ N_EXERCISES = 196
 MIN_EXERCISES = 10
 
 # Time tolerance for exercises
-tol = 10
+try:
+    tol = int(sys.argv[1])
+except:
+    sys.exit("Missing time tolerance argument. Exiting...")
+
 trimming = tol #math.inf
 
 cluster_tag = 'all'

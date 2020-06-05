@@ -70,27 +70,53 @@ for i in range(1, len(df.Usuario)):
 print("Finished logging scores.")
 print("Logging exercises...")
 
-for i in range(0, len(df.Usuario)):
-    for j in range(0, len(df.Eventos[i])):
-        if (df.Eventos[i][j]['evento'] == 'problem_check'):
-            #print('\t problem_check')
-            if (df.Eventos[i][j]['resultados'] != []):
-                #print('\t \t results')
-                # convert date time to epoch time for a better comparison
-                time_split = df.Eventos[i][j]['tiempo'].split('T')
-                time_tuple = time.strptime(time_split[0] + ' ' + time_split[1][:8], date_format)
-                time_epoch = time.mktime(time_tuple)   
-                if(df.Eventos[i][j]['resultados'][0]['correcto'] == 'True'):
-                    #print('\t \t \t right')
-                    correctExercises[i][int(df.Eventos[i][j]['id_problema']) - 1] = time_epoch
-                    correctExercisesCount[i] = correctExercisesCount[i] + 1
-                elif(df.Eventos[i][j]['resultados'][0]['correcto'] == 'False'):
-                    #print('\t \t \t wrong')
-                    wrongExercises[i][int(df.Eventos[i][j]['id_problema']) - 1] = time_epoch
-                    num_intentos = int(df.Eventos[i][j]['num_intentos'])
-                    wrongExercisesCount[i] = (wrongExercisesCount[i] - num_intentos + 1) + num_intentos
-    #clear()
-    #print('Exercises:', math.ceil(i*100/N_USERS), '% done')
+exercise_dump_exists = os.path.isfile('correct_exercises.npy')
+
+if (exercise_dump_exists):
+    correctExercises = np.load('correct_exercises.npy', allow_pickle=True)
+    correctExercisesCount = np.load('correct_exercises_count.npy', allow_pickle=True)
+    wrongExercises = np.load('wrong_exercises.npy', allow_pickle=True)
+    wrongExercisesCount = np.load('wrong_exercises_count.npy', allow_pickle=True)
+else:
+    # create the exercise list
+    correctExercises = np.empty((N_USERS, N_EXERCISES))
+    correctExercises.fill(np.nan)
+
+    correctExercisesCount = np.empty(N_USERS)
+    correctExercisesCount.fill(0)
+
+    wrongExercises = np.empty((N_USERS, N_EXERCISES))
+    wrongExercises.fill(np.nan)
+
+    wrongExercisesCount = np.empty(N_USERS)
+    wrongExercisesCount.fill(0)
+
+    for i in range(0, len(df.Usuario)):
+        for j in range(0, len(df.Eventos[i])):
+            if (df.Eventos[i][j]['evento'] == 'problem_check'):
+                #print('\t problem_check')
+                if (df.Eventos[i][j]['resultados'] != []):
+                    #print('\t \t results')
+                    # convert date time to epoch time for a better comparison
+                    time_split = df.Eventos[i][j]['tiempo'].split('T')
+                    time_tuple = time.strptime(time_split[0] + ' ' + time_split[1][:8], date_format)
+                    time_epoch = time.mktime(time_tuple)   
+                    if(df.Eventos[i][j]['resultados'][0]['correcto'] == 'True'):
+                        #print('\t \t \t right')
+                        correctExercises[i][int(df.Eventos[i][j]['id_problema']) - 1] = time_epoch
+                        correctExercisesCount[i] = correctExercisesCount[i] + 1
+                    elif(df.Eventos[i][j]['resultados'][0]['correcto'] == 'False'):
+                        #print('\t \t \t wrong')
+                        wrongExercises[i][int(df.Eventos[i][j]['id_problema']) - 1] = time_epoch
+                        num_intentos = int(df.Eventos[i][j]['num_intentos'])
+                        wrongExercisesCount[i] = (wrongExercisesCount[i] - num_intentos + 1) + num_intentos
+        #clear()
+        #print('Exercises:', math.ceil(i*100/N_USERS), '% done')
+
+    np.save('correct_exercises.npy', correctExercises, allow_pickle=True)
+    np.save('correct_exercises_count.npy', correctExercisesCount, allow_pickle=True)
+    np.save('wrong_exercises.npy', wrongExercises, allow_pickle=True)
+    np.save('wrong_exercises_count.npy', wrongExercisesCount, allow_pickle=True)
 
 print('Ended logging.')
 
@@ -123,20 +149,12 @@ df = df.reset_index(drop=True)
 
 print(df.shape, correctExercises.shape, wrongExercises.shape)
 
-
-# In[387]:
-
+print("The amount of users deleted in the first filter was ", len(users_to_delete))
 
 N_USERS = len(df.Usuario)
 
 correctExercises_minutes = correctExercises / 60
 wrongExercises_minutes = wrongExercises / 60
-
-
-# # Select users
-
-# In[388]:
-
 
 dump_exists = os.path.isfile(str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv')
 
@@ -183,9 +201,6 @@ else:
 
 
 # # Calculate the time difference between the users
-
-# In[403]:
-
 
 if __name__ == '__main__':
     __spec__ = None
@@ -434,11 +449,23 @@ plt.savefig(str(tol) + '/' + str(trimming) + '-amount_of_exercises.png', bbox_in
 #plt.show()
 
 plt.figure(figsize=(15, 10))
-plt.hist(total_exercises_under_tol, bins=np.arange(total_exercises_under_tol.max()) - 0.5, ec='black')
+plt.hist(total_exercises_under_tol, bins=np.arange(total_exercises_under_tol.max()) + 1.5, ec='black')
 plt.yscale('log')
-plt.xticks(range(total_exercises_under_tol.max() - 1), rotation=90)
-plt.xlim([-1, total_exercises_under_tol.max() - 1])
+plt.xticks(range(total_exercises_under_tol.max() + 1), rotation=90)
+plt.xlim([-1, total_exercises_under_tol.max() + 1])
+plt.ylabel("Amount of pairs", fontsize=20)
+plt.xlabel("Exercises in common", fontsize=20)
 plt.savefig(str(tol) + '/' + str(trimming) + '-total_exercises_under_tol.png')
+
+print("Total number of pairs: ", len(total_exercises_under_tol))
+
+np.savetxt("exercise_dump.txt", total_exercises_under_tol)
+
+print("Plotted.")
+
+np.save(str(tol) + '/' + str(tol) + '-teut.npy', total_exercises_under_tol, allow_pickle=True)
+
+sys.exit()
 
 
 # # Plot the distance from optimal curve (X^9) and separate outliers

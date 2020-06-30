@@ -24,18 +24,16 @@ importlib.reload(ctd)
 
 from Definitions import *
 
-
 # # Read scores and user data
 
-# In[384]:
-
-
-df = readDataFile("eventos_final.json")
-scores_csv = pd.read_csv("UAMx_Android301x_1T2015_grade_report_2015-04-21-1145_sanitized.csv")
-ids_sospechosos = pd.read_csv("UserIDClusterSospechoso.csv")
-
-
-# In[385]:
+if (NEW_DATASET):
+    df = readDataFile("eventos_conIp_Ed2.json")
+    scores_csv = pd.read_csv("UAMx_Android301x_3T2015_grade_report_2015-12-10-1243_sanitized.csv")
+    dataset_prefix = ''
+else:
+    df = readDataFile("eventos_final.json")
+    scores_csv = pd.read_csv("UAMx_Android301x_1T2015_grade_report_2015-04-21-1145_sanitized.csv")
+    dataset_prefix = 'original_data/'
 
 
 N_USERS = len(df.Usuario)
@@ -59,24 +57,24 @@ print("Logging scores...")
 
 for i in range(1, len(df.Usuario)):
     try:
-        score = scores_csv.loc[scores_csv['id'] == int(df.Usuario[i])]['grade'].item()
-        scores.append((int(df.Usuario[i]), score))
+        if (df.Usuario[i] != 'None'):
+            score = scores_csv.loc[scores_csv['id'] == int(df.Usuario[i])]['grade'].item()
+            scores.append((int(df.Usuario[i]), score))
+        else:
+            scores.append((np.nan, np.nan))
     except:                      
         scores.append((int(df.Usuario[i]), np.nan))
-
-    #clear()
-    #print('Scores:', math.ceil(i*100/len(df.Usuario)), '% done')
 
 print("Finished logging scores.")
 print("Logging exercises...")
 
-exercise_dump_exists = os.path.isfile('correct_exercises.npy')
+exercise_dump_exists = os.path.isfile(dataset_prefix + 'correct_exercises.npy')
 
 if (exercise_dump_exists):
-    correctExercises = np.load('correct_exercises.npy', allow_pickle=True)
-    correctExercisesCount = np.load('correct_exercises_count.npy', allow_pickle=True)
-    wrongExercises = np.load('wrong_exercises.npy', allow_pickle=True)
-    wrongExercisesCount = np.load('wrong_exercises_count.npy', allow_pickle=True)
+    correctExercises = np.load(dataset_prefix + 'correct_exercises.npy', allow_pickle=True)
+    correctExercisesCount = np.load(dataset_prefix + 'correct_exercises_count.npy', allow_pickle=True)
+    wrongExercises = np.load(dataset_prefix + 'wrong_exercises.npy', allow_pickle=True)
+    wrongExercisesCount = np.load(dataset_prefix + 'wrong_exercises_count.npy', allow_pickle=True)
 else:
     # create the exercise list
     correctExercises = np.empty((N_USERS, N_EXERCISES))
@@ -101,6 +99,7 @@ else:
                     time_split = df.Eventos[i][j]['tiempo'].split('T')
                     time_tuple = time.strptime(time_split[0] + ' ' + time_split[1][:8], date_format)
                     time_epoch = time.mktime(time_tuple)   
+                    #print(time_epoch)
                     if(df.Eventos[i][j]['resultados'][0]['correcto'] == 'True'):
                         #print('\t \t \t right')
                         correctExercises[i][int(df.Eventos[i][j]['id_problema']) - 1] = time_epoch
@@ -113,10 +112,10 @@ else:
         #clear()
         #print('Exercises:', math.ceil(i*100/N_USERS), '% done')
 
-    np.save('correct_exercises.npy', correctExercises, allow_pickle=True)
-    np.save('correct_exercises_count.npy', correctExercisesCount, allow_pickle=True)
-    np.save('wrong_exercises.npy', wrongExercises, allow_pickle=True)
-    np.save('wrong_exercises_count.npy', wrongExercisesCount, allow_pickle=True)
+    np.save(dataset_prefix + 'correct_exercises.npy', correctExercises, allow_pickle=True)
+    np.save(dataset_prefix + 'correct_exercises_count.npy', correctExercisesCount, allow_pickle=True)
+    np.save(dataset_prefix + 'wrong_exercises.npy', wrongExercises, allow_pickle=True)
+    np.save(dataset_prefix + 'wrong_exercises_count.npy', wrongExercisesCount, allow_pickle=True)
 
 print('Ended logging.')
 
@@ -156,10 +155,10 @@ N_USERS = len(df.Usuario)
 correctExercises_minutes = correctExercises / 60
 wrongExercises_minutes = wrongExercises / 60
 
-dump_exists = os.path.isfile(str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv')
+dump_exists = os.path.isfile(dataset_prefix + str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv')
 
 if (dump_exists):
-    df_all_selected_users = pd.read_csv(str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv', index_col=0)
+    df_all_selected_users = pd.read_csv(dataset_prefix + str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv', index_col=0)
     df_all_selected_users.fillna('', inplace=True)
 
     selected_users_CC = literal_eval(df_all_selected_users.loc[0][0])
@@ -195,7 +194,7 @@ else:
         p_XX.join()
 
         df_all_selected_users = pd.DataFrame([selected_users_CC, selected_users_XC, selected_users_CX, selected_users_XX])
-        df_all_selected_users.to_csv(str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv')
+        df_all_selected_users.to_csv(dataset_prefix + str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv')
 
         print("Data stored.")
 
@@ -444,14 +443,16 @@ plt.xticks(fontsize=20)
 
 plt.grid(color='grey', linestyle='--', linewidth=.5)
 
-plt.savefig(str(tol) + '/' + str(trimming) + '-amount_of_exercises.png', bbox_inches='tight')
+plt.savefig(dataset_prefix + str(tol) + '/' + str(trimming) + '-amount_of_exercises.png', bbox_inches='tight')
 
 #plt.show()
+
+print("TEUT:", total_exercises_under_tol.max())
 
 plt.figure(figsize=(15, 10))
 plt.hist(total_exercises_under_tol, bins=np.arange(total_exercises_under_tol.max()) + 1.5, ec='black')
 plt.yscale('log')
-plt.xticks(range(total_exercises_under_tol.max() + 1), rotation=90)
+plt.xticks(np.arange(total_exercises_under_tol.max() + 1), rotation=90)
 plt.xlim([-1, total_exercises_under_tol.max() + 1])
 plt.ylabel("Amount of pairs", fontsize=20)
 plt.xlabel("Exercises in common", fontsize=20)
@@ -463,9 +464,9 @@ np.savetxt("exercise_dump.txt", total_exercises_under_tol)
 
 print("Plotted.")
 
-np.save(str(tol) + '/' + str(tol) + '-teut.npy', total_exercises_under_tol, allow_pickle=True)
+np.save(dataset_prefix + str(tol) + '/' + str(tol) + '-teut.npy', total_exercises_under_tol, allow_pickle=True)
 
-sys.exit()
+#sys.exit()
 
 
 # # Plot the distance from optimal curve (X^9) and separate outliers
@@ -508,7 +509,7 @@ axes.set_ylim([-1.1, 1.1])
 
 plt.grid(color='grey', linestyle='--', linewidth=.5)
 
-plt.savefig(str(tol) + '/' + str(trimming) + '-distance_from_curve.png')
+plt.savefig(dataset_prefix + str(tol) + '/' + str(trimming) + '-distance_from_curve.png')
 
 #plt.show()
 
@@ -588,15 +589,21 @@ plt.yticks(fontsize=20)
 
 plt.grid(color='grey', linestyle='--', linewidth=.5)
 
-plt.savefig(str(tol) + '/' + str(trimming) + '-hypotheses.png', bbox_inches='tight')
+plt.savefig(dataset_prefix + str(tol) + '/' + str(trimming) + '-hypotheses.png', bbox_inches='tight')
 
 #plt.show()
 
+print("Checking IPs...")
 
-# In[409]:
+ip_dump_exists = os.path.isfile(dataset_prefix + str(tol) + 'ip_addrs.npy')
 
+if (ip_dump_exists):
+    ip_addrs = np.load(dataset_prefix + str(tol) + 'ip_addrs.npy', allow_pickle=True)
+else:    
+    ip_addrs = check_ip_addresses(array_being_analysed, df)
+    np.save(dataset_prefix + str(tol) + 'ip_addrs.npy', ip_addrs, allow_pickle=True)
 
-ip_addrs = check_ip_addresses(array_being_analysed, df)
+print("Done.")
 
 ips_in_common = []
 
@@ -645,7 +652,7 @@ plt.xticks(fontsize=20)
 
 plt.grid(color='grey', linestyle='--', linewidth=.5)
 
-plt.savefig(str(tol) + '/' + str(trimming) + '-exercises_same_ip-' + FLAG + '.png')
+plt.savefig(dataset_prefix + str(tol) + '/' + str(trimming) + '-exercises_same_ip-' + FLAG + '.png')
 
 #plt.show()
 
@@ -711,7 +718,7 @@ plt.xticks(fontsize=20)
 
 plt.grid(color='grey', linestyle='--', linewidth=.5)
 
-plt.savefig(str(tol) + '/' + str(trimming) + '-material_usage_index-' + FLAG + '.png', bbox_inches='tight')
+plt.savefig(dataset_prefix + str(tol) + '/' + str(trimming) + '-material_usage_index-' + FLAG + '.png', bbox_inches='tight')
 
 #plt.show()
 
@@ -781,7 +788,7 @@ while i < len(user_pairs_copy):
                 i = i + 1
                 break
 
-node_colors = {}
+""" node_colors = {}
 
 for i in range(0, len(material_usage)):           
     user_1 = int(user_pairs_copy[i][0])
@@ -822,14 +829,7 @@ pos = nx.nx_agraph.graphviz_layout(G, prog='dot', args="-Gnodesep=5")
 
 # # Plot connection graph
 
-# In[414]:
-
-
 plt.close('all')
-
-
-# In[415]:
-
 
 plt.figure(figsize=(50, 50))
 
@@ -847,12 +847,9 @@ for _,t in text.items():
     t.set_rotation('vertical')
 
 plt.savefig(str(tol) + '/' + str(trimming) + '-connection-graph' + '.png')
-
+"""
 
 # # Clustering
-
-# In[416]:
-
 
 temp = []
 
@@ -871,7 +868,7 @@ for i in range(0, len(ip_addrs_temp)):
         for k in range(0, len(user_2_ips)):
             if (user_1_ips[j] == user_2_ips[k]):
                 amount = amount + 1
-    print('Total:', len(user_1_ips), len(user_2_ips), amount)
+    #print('Total:', len(user_1_ips), len(user_2_ips), amount)
     #print('-'*100)
     #print('User 1 (', array_being_analysed[i][2], ',', len(user_1_ips), '): ', user_1_ips, count_1)
     #print('User 2 (', array_being_analysed[i][3], ',', len(user_2_ips), '): ', user_2_ips, count_2)
@@ -1009,6 +1006,10 @@ print(class_weights)
 NUM_CV = 10
 
 X = scaled_x
+
+# TODO
+# Sometimes the clusters will be inverted. There should be a method capable of identifying them correctly.
+
 y = x['Labels']
 
 C = np.linspace(-5, 11, 9)
@@ -1016,59 +1017,75 @@ C = [pow(2, i) for i in C] #2^[-5, -3, ... , 10]
 gamma = np.linspace(-1, 15, 9)
 gamma = [pow(2, i) for i in gamma] #2^[-1, 1, ... , 15]
 
-
 # In[422]:
 
 
 # Set up possible values of parameters to optimize over
           
-p_grid = {'C': C, 'gamma': gamma}
-    
-svc = svm.SVC(kernel = 'linear', class_weight=class_weights, probability=True)
+p_grid = [{'kernel': ['rbf'], 'gamma': gamma, 'C': C},
+        {'kernel': ['linear'], 'C': C}]
+svc = svm.SVC(class_weight=class_weights, probability=True)
 clf = GridSearchCV(svc, param_grid=p_grid, cv=NUM_CV, iid=False, refit=True)
 print(clf)
 
-from sklearn.model_selection import cross_val_score, cross_val_predict
+import pickle
 
-np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
+filename = 'finalized_model-' + str(tol) + '.sav'
 
-if (os.path.isfile("results_dump.csv")):
-    os.remove("results_dump.csv")
+if(NEW_DATASET):
+    # load the model from disk
+    loaded_model = pickle.load(open(filename, 'rb'))
+    result = loaded_model.score(X, y)
+    print("Result from loading model:", result)
+else:
+    np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 
-if (os.path.isfile("X_dump.csv")):
-    os.remove("X_dump.csv")
-    
-if (os.path.isfile("sv_dump.csv")):
-    os.remove("sv_dump.csv")
-    
-def my_scoring(estimator, X, y):
-    results = estimator.predict_proba(X)
-    svs = estimator.best_estimator_.support_vectors_
-    
-    df_results = pd.DataFrame(results)
-    with open('results_dump.csv', 'a') as f:
-        df_results.to_csv(f, header=False, index=False)
-    
-    df_X = pd.DataFrame(X)
-    with open('X_dump.csv', 'a') as f:
-        df_X.to_csv(f, header=False, index=False)
+    from sklearn.model_selection import cross_val_score, cross_val_predict
+
+    if (os.path.isfile("results_dump.csv")):
+        os.remove("results_dump.csv")
+
+    if (os.path.isfile("X_dump.csv")):
+        os.remove("X_dump.csv")
         
-    df_sv = pd.DataFrame(svs)
-    with open('sv_dump.csv', 'a') as f:
-        df_sv.to_csv(f, header=False, index=False)
-    
-    #plt.figure()
-    #plt.hist(results[:, 0], bins=len(results))
-    #plt.show()
-    
-    return estimator.best_score_
+    if (os.path.isfile("sv_dump.csv")):
+        os.remove("sv_dump.csv")
+        
+    def my_scoring(estimator, X, y):
+        results = estimator.predict_proba(X)
+        svs = estimator.best_estimator_.support_vectors_
+        
+        df_results = pd.DataFrame(results)
+        with open('results_dump.csv', 'a') as f:
+            df_results.to_csv(f, header=False, index=False)
+        
+        df_X = pd.DataFrame(X)
+        with open('X_dump.csv', 'a') as f:
+            df_X.to_csv(f, header=False, index=False)
+            
+        df_sv = pd.DataFrame(svs)
+        with open('sv_dump.csv', 'a') as f:
+            df_sv.to_csv(f, header=False, index=False)
+        
+        #plt.figure()
+        #plt.hist(results[:, 0], bins=len(results))
+        #plt.show()
+        
+        return estimator.best_score_
 
-scores = cross_val_score(clf, X, y, cv=NUM_CV, scoring=my_scoring)
+    # This CV is done to estimate the performance of the algorithm on unseen data and also get rid of the bias introduced 
+    # by the GridSearch. Therefore, if the results are good, we can run the GridSearch again and fixate the hyperparameters.
+    #scores = cross_val_score(clf, X, y, cv=NUM_CV, scoring=my_scoring)
+    #print("This model can differentiate harvesters (0) from collaborators (1) with an accuracy and standard deviation of, respectively: %0.3f (+/- %0.3f)" % (scores.mean() * 100, scores.std() * 200))
 
-print("This model can differentiate harvesters (0) from collaborators (1) with an accuracy and standard deviation of, respectively: %0.3f (+/- %0.3f)" % (scores.mean() * 100, scores.std() * 200))
-
+    # save the model to disk
+    clf.fit(X, y)
+    print(clf)
+    pickle.dump(clf.best_estimator_, open(filename, 'wb'))
 
 # In[423]:
+
+sys.exit()
 
 
 df_results = pd.read_csv('results_dump.csv', index_col=0, header=None)

@@ -20,9 +20,14 @@ import os
 from sklearn.cluster import AgglomerativeClustering
 from multiprocessing import Process, Manager
 from sklearn.decomposition import PCA
-from sklearn import preprocessing
+from sklearn import preprocessing, metrics
 from functools import partial
 from ast import literal_eval
+
+def print_verb(*args, **kwargs):
+    if (VERBOSE):
+        __builtin__.print(*args, **kwargs)
+    return 
 
 ## Constants
 
@@ -51,6 +56,21 @@ try:
     NEW_DATASET = int(sys.argv[2])
 except:
     sys.exit("Missing new dataset argument (0 or 1). Exiting...")
+
+try:
+    REWRITE_DUMPS = int(sys.argv[3])
+except:
+    sys.exit("Missing dump usage argument (0 or 1). Exiting...")
+
+try:
+    VERBOSE = int(sys.argv[4])
+except:
+    sys.exit("Missing verbose argument (0 or 1). Exiting...")
+
+try:
+    TIME_LIMIT = int(sys.argv[5])
+except:
+    sys.exit("Missing time limit argument (0 or 1). Exiting...")
 
 trimming = tol #math.inf
 
@@ -444,4 +464,4 @@ def check_material_usage(users, df):
 if (trimming < tol):
     raise ValueError('The trimming value is lower than the tolerance. The code will not work like this.')
 else:
-    print('Libraries and definitions loaded correctly.')
+    print_verb('Libraries and definitions loaded correctly.')

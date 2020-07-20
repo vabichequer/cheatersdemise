@@ -13,8 +13,6 @@
 
 # In[402]:
 
-print("Projecto velho")
-
 import importlib
 import Definitions
 import ctd
@@ -23,6 +21,8 @@ importlib.reload(Definitions)
 importlib.reload(ctd)
 
 from Definitions import *
+
+print("Code started. Time window of: ", tol)
 
 # # Read scores and user data
 
@@ -53,7 +53,7 @@ wrongExercisesCount.fill(0)
 
 scores = []
 
-print("Logging scores...")
+print_verb("Logging scores...")
 
 for i in range(1, len(df.Usuario)):
     try:
@@ -65,12 +65,12 @@ for i in range(1, len(df.Usuario)):
     except:                      
         scores.append((int(df.Usuario[i]), np.nan))
 
-print("Finished logging scores.")
-print("Logging exercises...")
+print_verb("Finished logging scores.")
+print_verb("Logging exercises...")
 
 exercise_dump_exists = os.path.isfile(dataset_prefix + 'correct_exercises.npy')
 
-if (exercise_dump_exists):
+if (exercise_dump_exists and not REWRITE_DUMPS):
     correctExercises = np.load(dataset_prefix + 'correct_exercises.npy', allow_pickle=True)
     correctExercisesCount = np.load(dataset_prefix + 'correct_exercises_count.npy', allow_pickle=True)
     wrongExercises = np.load(dataset_prefix + 'wrong_exercises.npy', allow_pickle=True)
@@ -89,35 +89,41 @@ else:
     wrongExercisesCount = np.empty(N_USERS)
     wrongExercisesCount.fill(0)
 
+    if (TIME_LIMIT):
+        time_lim = 1428105600000 #1 month, from march to april
+    else:
+        time_lim = sys.maxint
+
     for i in range(0, len(df.Usuario)):
         for j in range(0, len(df.Eventos[i])):
             if (df.Eventos[i][j]['evento'] == 'problem_check'):
-                #print('\t problem_check')
+                #print_verb('\t problem_check')
                 if (df.Eventos[i][j]['resultados'] != []):
-                    #print('\t \t results')
+                    #print_verb('\t \t results')
                     # convert date time to epoch time for a better comparison
                     time_split = df.Eventos[i][j]['tiempo'].split('T')
                     time_tuple = time.strptime(time_split[0] + ' ' + time_split[1][:8], date_format)
                     time_epoch = time.mktime(time_tuple)   
-                    #print(time_epoch)
-                    if(df.Eventos[i][j]['resultados'][0]['correcto'] == 'True'):
-                        #print('\t \t \t right')
-                        correctExercises[i][int(df.Eventos[i][j]['id_problema']) - 1] = time_epoch
-                        correctExercisesCount[i] = correctExercisesCount[i] + 1
-                    elif(df.Eventos[i][j]['resultados'][0]['correcto'] == 'False'):
-                        #print('\t \t \t wrong')
-                        wrongExercises[i][int(df.Eventos[i][j]['id_problema']) - 1] = time_epoch
-                        num_intentos = int(df.Eventos[i][j]['num_intentos'])
-                        wrongExercisesCount[i] = (wrongExercisesCount[i] - num_intentos + 1) + num_intentos
+                    #print_verb(time_epoch)
+                    if (time_epoch < time_lim):
+                        if(df.Eventos[i][j]['resultados'][0]['correcto'] == 'True'):
+                            #print_verb('\t \t \t right')
+                            correctExercises[i][int(df.Eventos[i][j]['id_problema']) - 1] = time_epoch
+                            correctExercisesCount[i] = correctExercisesCount[i] + 1
+                        elif(df.Eventos[i][j]['resultados'][0]['correcto'] == 'False'):
+                            #print_verb('\t \t \t wrong')
+                            wrongExercises[i][int(df.Eventos[i][j]['id_problema']) - 1] = time_epoch
+                            num_intentos = int(df.Eventos[i][j]['num_intentos'])
+                            wrongExercisesCount[i] = (wrongExercisesCount[i] - num_intentos + 1) + num_intentos
         #clear()
-        #print('Exercises:', math.ceil(i*100/N_USERS), '% done')
+        #print_verb('Exercises:', math.ceil(i*100/N_USERS), '% done')
 
     np.save(dataset_prefix + 'correct_exercises.npy', correctExercises, allow_pickle=True)
     np.save(dataset_prefix + 'correct_exercises_count.npy', correctExercisesCount, allow_pickle=True)
     np.save(dataset_prefix + 'wrong_exercises.npy', wrongExercises, allow_pickle=True)
     np.save(dataset_prefix + 'wrong_exercises_count.npy', wrongExercisesCount, allow_pickle=True)
 
-print('Ended logging.')
+print_verb('Ended logging.')
 
 N_USERS = len(df)
 
@@ -129,7 +135,7 @@ N_USERS = len(df)
 
 # Cutting down the size of the arrays
 
-print(df.shape, correctExercises.shape, wrongExercises.shape)
+print_verb(df.shape, correctExercises.shape, wrongExercises.shape)
 
 users_to_delete = []
 
@@ -146,9 +152,9 @@ wrongExercisesCount = np.delete(wrongExercisesCount, users_to_delete, 0)
 
 df = df.reset_index(drop=True)
 
-print(df.shape, correctExercises.shape, wrongExercises.shape)
+print_verb(df.shape, correctExercises.shape, wrongExercises.shape)
 
-print("The amount of users deleted in the first filter was ", len(users_to_delete))
+print_verb("The amount of users deleted in the first filter was ", len(users_to_delete))
 
 N_USERS = len(df.Usuario)
 
@@ -157,7 +163,7 @@ wrongExercises_minutes = wrongExercises / 60
 
 dump_exists = os.path.isfile(dataset_prefix + str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv')
 
-if (dump_exists):
+if (dump_exists and not REWRITE_DUMPS):
     df_all_selected_users = pd.read_csv(dataset_prefix + str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv', index_col=0)
     df_all_selected_users.fillna('', inplace=True)
 
@@ -166,7 +172,7 @@ if (dump_exists):
     selected_users_CX = literal_eval(df_all_selected_users.loc[2][0])
     selected_users_XX = literal_eval(df_all_selected_users.loc[3][0])
     
-    print('Dump loaded.')
+    print_verb('Dump loaded.')
 else:
     #if __name__ == '__main__':
         #__spec__ = None
@@ -175,16 +181,16 @@ else:
         selected_users_CX = Manager().list()
         selected_users_XX = Manager().list()
 
-        print('Selecting CC users...')
+        print_verb('Selecting CC users...')
         p_CC = Process(target=selectUsers, args=(selected_users_CC, tol, correctExercises_minutes, correctExercises_minutes, 'CC', N_USERS, MIN_EXERCISES,))
         p_CC.start()
-        print('Selecting XC users...')
+        print_verb('Selecting XC users...')
         p_XC = Process(target=selectUsers, args=(selected_users_XC, tol, wrongExercises_minutes, correctExercises_minutes, 'XC', N_USERS, MIN_EXERCISES))
         p_XC.start()
-        print('Selecting CX users...')
+        print_verb('Selecting CX users...')
         p_CX = Process(target=selectUsers, args=(selected_users_CX, tol, correctExercises_minutes, wrongExercises_minutes, 'CX', N_USERS, MIN_EXERCISES))
         p_CX.start()
-        print('Selecting XX users...')
+        print_verb('Selecting XX users...')
         p_XX = Process(target=selectUsers, args=(selected_users_XX, tol, wrongExercises_minutes, wrongExercises_minutes, 'XX', N_USERS, MIN_EXERCISES))
         p_XX.start()
 
@@ -196,7 +202,7 @@ else:
         df_all_selected_users = pd.DataFrame([selected_users_CC, selected_users_XC, selected_users_CX, selected_users_XX])
         df_all_selected_users.to_csv(dataset_prefix + str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv')
 
-        print("Data stored.")
+        print_verb("Data stored.")
 
 
 # # Calculate the time difference between the users
@@ -208,19 +214,19 @@ if __name__ == '__main__':
     time_differences_CX = Manager().list()
     time_differences_XX = Manager().list()
 
-    print('Time differentiating CC users...')
+    print_verb('Time differentiating CC users...')
     p_CC = Process(target=ctd.computeTimeDifferences, args=(time_differences_CC, selected_users_CC, 
                                                         correctExercises_minutes, correctExercises_minutes, 'CC', N_EXERCISES,))
     p_CC.start()
-    print('Time differentiating XC users...')
+    print_verb('Time differentiating XC users...')
     p_XC = Process(target=ctd.computeTimeDifferences, args=(time_differences_XC, selected_users_XC,
                                                         wrongExercises_minutes, correctExercises_minutes, 'XC', N_EXERCISES,))
     p_XC.start()
-    print('Time differentiating CX users...')
+    print_verb('Time differentiating CX users...')
     p_CX = Process(target=ctd.computeTimeDifferences, args=(time_differences_CX, selected_users_CX,
                                                         correctExercises_minutes, wrongExercises_minutes, 'CX', N_EXERCISES,))
     p_CX.start()
-    print('Time differentiating XX users...')
+    print_verb('Time differentiating XX users...')
     p_XX = Process(target=ctd.computeTimeDifferences, args=(time_differences_XX, selected_users_XX,
                                                         wrongExercises_minutes, wrongExercises_minutes, 'XX', N_EXERCISES,))
     p_XX.start()
@@ -230,7 +236,7 @@ if __name__ == '__main__':
     p_CX.join()
     p_XX.join()
     
-    print('Finished.')
+    print_verb('Finished.')
 
 
 # ## Users in common
@@ -266,8 +272,8 @@ for n in range(0, len(selected_users_XX)):
     if (selected_users_XX[n][1] not in users_in_common):
         users_in_common.append(selected_users_XX[n][1])
 
-print('\t Result size:', len(users_in_common))
-print('\t Result data:', users_in_common)
+print_verb('\t Result size:', len(users_in_common))
+print_verb('\t Result data:', users_in_common)
 
 
 # # Join type arrays
@@ -298,18 +304,18 @@ all_selected_users = temp_users
 all_time_differences = temp_td
 label = versions
 
-print(label)
-print(label[0], len(all_selected_users[0]), '||', len(selected_users_CC))
-print(label[1], len(all_selected_users[1]), '||', len(selected_users_XC))
-print(label[2], len(all_selected_users[2]), '||', len(selected_users_CX))
-print(label[3], len(all_selected_users[3]), '||', len(selected_users_XX))
+print_verb(label)
+print_verb(label[0], len(all_selected_users[0]), '||', len(selected_users_CC))
+print_verb(label[1], len(all_selected_users[1]), '||', len(selected_users_XC))
+print_verb(label[2], len(all_selected_users[2]), '||', len(selected_users_CX))
+print_verb(label[3], len(all_selected_users[3]), '||', len(selected_users_XX))
 
 
 # In[392]:
 
 
 type_array = type_separation(all_selected_users, all_time_differences, tol)
-print('Finished')
+print_verb('Finished')
 
 
 # # Calculate user bias and pairs through the type arrays
@@ -322,9 +328,9 @@ user_pairs, user_score_difference, fig, string_dump, user_interaction_percentage
 with open('user_bias_dump.txt', 'w') as filehandle:
     json.dump(string_dump, filehandle)
 
-print('Done.')
+print_verb('Done.')
     
-#print('Plotting', len(user_pairs), 'pairs consisted of', len(users_in_common), 'users')
+#print_verb('Plotting', len(user_pairs), 'pairs consisted of', len(users_in_common), 'users')
 #fig.set_size_inches(20, len(fig.axes) * 6)
 #fig.tight_layout()
 #plt.savefig(str(tol) + '/' + str(trimming) + '-user_bias.eps')
@@ -365,7 +371,7 @@ print('Done.')
 
 # plt.figure(figsize=(60, 28))  
 # 
-# #print(np.shape(distance_matrix))
+# #print_verb(np.shape(distance_matrix))
 # 
 # square = ssd.squareform(distance_matrix)
 # 
@@ -412,7 +418,7 @@ while i < len(analysing_data):
     else:
         i = i + 1
 
-print(MIN_EXERCISES, tol, len(user_pairs_copy), len(users_in_common), 'pairs remaining.')
+print_verb(MIN_EXERCISES, tol, len(user_pairs_copy), len(users_in_common), 'pairs remaining.')
 
 
 # ## Plot the amout of exercise by user through the whole dataset
@@ -447,7 +453,7 @@ plt.savefig(dataset_prefix + str(tol) + '/' + str(trimming) + '-amount_of_exerci
 
 #plt.show()
 
-print("TEUT:", total_exercises_under_tol.max())
+print_verb("TEUT:", total_exercises_under_tol.max())
 
 plt.figure(figsize=(15, 10))
 plt.hist(total_exercises_under_tol, bins=np.arange(total_exercises_under_tol.max()) + 1.5, ec='black')
@@ -458,11 +464,11 @@ plt.ylabel("Amount of pairs", fontsize=20)
 plt.xlabel("Exercises in common", fontsize=20)
 plt.savefig(str(tol) + '/' + str(trimming) + '-total_exercises_under_tol.png')
 
-print("Total number of pairs: ", len(total_exercises_under_tol))
+print_verb("Total number of pairs: ", len(total_exercises_under_tol))
 
 np.savetxt("exercise_dump.txt", total_exercises_under_tol)
 
-print("Plotted.")
+print_verb("Plotted.")
 
 np.save(dataset_prefix + str(tol) + '/' + str(tol) + '-teut.npy', total_exercises_under_tol, allow_pickle=True)
 
@@ -593,17 +599,17 @@ plt.savefig(dataset_prefix + str(tol) + '/' + str(trimming) + '-hypotheses.png',
 
 #plt.show()
 
-print("Checking IPs...")
+print_verb("Checking IPs...")
 
 ip_dump_exists = os.path.isfile(dataset_prefix + str(tol) + 'ip_addrs.npy')
 
-if (ip_dump_exists):
+if (ip_dump_exists and not REWRITE_DUMPS):
     ip_addrs = np.load(dataset_prefix + str(tol) + 'ip_addrs.npy', allow_pickle=True)
 else:    
     ip_addrs = check_ip_addresses(array_being_analysed, df)
     np.save(dataset_prefix + str(tol) + 'ip_addrs.npy', ip_addrs, allow_pickle=True)
 
-print("Done.")
+print_verb("Done.")
 
 ips_in_common = []
 
@@ -617,10 +623,10 @@ for i in range(0, len(ip_addrs)):
         for k in range(0, len(user_2_ips)):
             if ((user_1_ips[j] == user_2_ips[k]) == True):
                 amount = amount + min(count_1[j], count_2[k])
-    #print('-'*100)
-    #print('User 1 (', array_being_analysed[i][2], ',', len(user_1_ips), '): ', user_1_ips, count_1)
-    #print('User 2 (', array_being_analysed[i][3], ',', len(user_2_ips), '): ', user_2_ips, count_2)
-    #print('\nCorrelation: ', amount, np.intersect1d(user_1_ips, user_2_ips, assume_unique=True))
+    #print_verb('-'*100)
+    #print_verb('User 1 (', array_being_analysed[i][2], ',', len(user_1_ips), '): ', user_1_ips, count_1)
+    #print_verb('User 2 (', array_being_analysed[i][3], ',', len(user_2_ips), '): ', user_2_ips, count_2)
+    #print_verb('\nCorrelation: ', amount, np.intersect1d(user_1_ips, user_2_ips, assume_unique=True))
     ips_in_common.append(amount)
 
 
@@ -749,9 +755,9 @@ for h in range(0, 2):
             for k in range(0, len(user_2_ips)):
                 if ((user_1_ips[j] == user_2_ips[k]) == True):
                     amount = amount + min(count_1[j], count_2[k])
-        #print('User 1 (', array_being_analysed[i][2], ',', len(user_1_ips), '): ', user_1_ips, count_1)
-        #print('User 2 (', array_being_analysed[i][3], ',', len(user_2_ips), '): ', user_2_ips, count_2)
-        #print('\nCorrelation: ', amount, np.intersect1d(user_1_ips, user_2_ips, assume_unique=True))
+        #print_verb('User 1 (', array_being_analysed[i][2], ',', len(user_1_ips), '): ', user_1_ips, count_1)
+        #print_verb('User 2 (', array_being_analysed[i][3], ',', len(user_2_ips), '): ', user_2_ips, count_2)
+        #print_verb('\nCorrelation: ', amount, np.intersect1d(user_1_ips, user_2_ips, assume_unique=True))
         temp.append('/' + str(len(user_1_ips)) + '/' + str(len(user_2_ips)) + '/' + str(len(np.intersect1d(user_1_ips, user_2_ips, assume_unique=True))))
     labels_ip_both.append(temp)
     
@@ -849,8 +855,6 @@ for _,t in text.items():
 plt.savefig(str(tol) + '/' + str(trimming) + '-connection-graph' + '.png')
 """
 
-# # Clustering
-
 temp = []
 
 for i, txt in enumerate(analysing_data):
@@ -868,17 +872,13 @@ for i in range(0, len(ip_addrs_temp)):
         for k in range(0, len(user_2_ips)):
             if (user_1_ips[j] == user_2_ips[k]):
                 amount = amount + 1
-    #print('Total:', len(user_1_ips), len(user_2_ips), amount)
-    #print('-'*100)
-    #print('User 1 (', array_being_analysed[i][2], ',', len(user_1_ips), '): ', user_1_ips, count_1)
-    #print('User 2 (', array_being_analysed[i][3], ',', len(user_2_ips), '): ', user_2_ips, count_2)
-    #print('\nCorrelation: ', amount, np.intersect1d(user_1_ips, user_2_ips, assume_unique=True))
+    #print_verb('Total:', len(user_1_ips), len(user_2_ips), amount)
+    #print_verb('-'*100)
+    #print_verb('User 1 (', array_being_analysed[i][2], ',', len(user_1_ips), '): ', user_1_ips, count_1)
+    #print_verb('User 2 (', array_being_analysed[i][3], ',', len(user_2_ips), '): ', user_2_ips, count_2)
+    #print_verb('\nCorrelation: ', amount, np.intersect1d(user_1_ips, user_2_ips, assume_unique=True))
     total = len(user_1_ips) + len(user_2_ips)
     ips_in_common_temp.append(amount / (total - amount))
-
-
-# In[444]:
-
 
 uip = np.asarray(user_interaction_percentages)
 mu = np.asarray(material_usage)
@@ -906,7 +906,7 @@ dict_var = {'CC':CC, 'XC':XC, 'User Bias':UB, 'Minimal MIR':MIR, 'Score Diff':Sc
 #            'IPs in common':IPs}
 
 for key, value in dict_var.items():
-    print(key, len(value), value.shape)
+    print_verb(key, len(value), value.shape)
     
 x = pd.DataFrame.from_dict(dict_var)
 
@@ -921,78 +921,45 @@ x=x[:-1]
 scaled_x = scaler.fit_transform(x)
 scaled_x = pd.DataFrame(scaled_x, columns=names)
 
-pd.set_option('display.max_rows', len(x))
-#x.drop(x.tail(1).index,inplace=True)
-x.shape
+# # Clustering
 
+if (TIME_LIMIT):
+    full_data_df = pd.read_pickle('final_df-' + str(tol) + '.pkl')
+    idxs = x.index
+    y = full_data_df.loc[idxs]['Labels']
+    x['Labels'] = y
 
-# In[445]:
+else:
+    from sklearn.cluster import KMeans
 
+    kmeans = KMeans(n_clusters=2, random_state=0)
 
-from sklearn.cluster import KMeans
+    kmeans.fit_predict(scaled_x)
 
-kmeans = KMeans(n_clusters=2, random_state=0)
+    print_verb(kmeans.labels_)
+    print_verb(kmeans.cluster_centers_)
 
-kmeans.fit_predict(scaled_x)
+    scaler.inverse_transform(kmeans.cluster_centers_)
 
-print(kmeans.labels_)
-print(kmeans.cluster_centers_)
+    y = kmeans.labels_
 
-x['Labels'] = kmeans.labels_
-x
+    x['Labels'] = y
 
+    x.to_pickle('final_df-' + str(tol) + '.pkl')
+    sys.exit()
 
-# In[446]:
+harvester = len(y[y == 0]) 
+collaboration = len(y[y == 1]) 
 
-
-scaler.inverse_transform(kmeans.cluster_centers_)
-
-
-# xl = 'User Bias'
-# yl = 'CC'
-# 
-# scatter = plt.scatter(x[xl], x[yl], edgecolors = 'black', c=kmeans.labels_, cmap='binary')
-# 
-# plt.xlabel(xl, fontsize=15)
-# plt.ylabel(yl, fontsize=15)
-# 
-# plt.savefig(str(tol) + '/' + str(trimming) + '-clustering' + '.eps')
-# plt.show()
-
-# plt.figure()
-# from pandas.plotting import scatter_matrix
-# from copy import deepcopy
-# 
-# plot_mat = deepcopy(x)
-# plot_mat.drop(columns=['Labels'], inplace=True)
-# 
-# scatter_matrix(plot_mat, alpha=0.3, figsize=(20, 20), edgecolors = 'black', c=kmeans.labels_, cmap='binary', diagonal='kde', )
-# plt.show()
-# 
-# plt.savefig(str(tol) + '/' + str(trimming) + '-scatter-matrix' + '.eps')
-
-# In[437]:
-
-
-harvester = len(kmeans.labels_[kmeans.labels_ == 0]) 
-person = len(kmeans.labels_[kmeans.labels_ == 1]) 
-
-print('In this dataset, there are', harvester, 'harvester type copies and', person, 'person type copies.')
+print_verb('In this dataset, there are', harvester, 'harvester type copies and', collaboration, 'collaboration type copies.')
 
 
 # ## Supervised learning
 
-# In[420]:
-
-
-print("There are", len(x['Labels'][x['Labels'] == 1]), "1's and", len(x['Labels'][x['Labels'] == 0]), "0's as labels.")
-prop_1 = len(x['Labels'][x['Labels'] == 1]) / len(x['Labels'])
-prop_0 = len(x['Labels'][x['Labels'] == 0]) / len(x['Labels'])
+print_verb("There are", collaboration, "1's and", collaboration, "0's as labels.")
+prop_1 = collaboration / len(y)
+prop_0 = harvester / len(y)
 print("The proportion of 1's and 0's is, repectively:", prop_1, prop_0)
-
-
-# In[421]:
-
 
 from sklearn import svm
 from sklearn.model_selection import GridSearchCV
@@ -1001,7 +968,7 @@ class_weights = {}
 class_weights[0] = prop_0
 class_weights[1] = prop_1
 
-print(class_weights)
+print_verb(class_weights)
 
 NUM_CV = 10
 
@@ -1010,7 +977,8 @@ X = scaled_x
 # TODO
 # Sometimes the clusters will be inverted. There should be a method capable of identifying them correctly.
 
-y = x['Labels']
+if (tol == 2):
+    y = 1 - y
 
 C = np.linspace(-5, 11, 9)
 C = [pow(2, i) for i in C] #2^[-5, -3, ... , 10]
@@ -1026,7 +994,7 @@ p_grid = [{'kernel': ['rbf'], 'gamma': gamma, 'C': C},
         {'kernel': ['linear'], 'C': C}]
 svc = svm.SVC(class_weight=class_weights, probability=True)
 clf = GridSearchCV(svc, param_grid=p_grid, cv=NUM_CV, iid=False, refit=True)
-print(clf)
+print_verb(clf)
 
 import pickle
 
@@ -1037,6 +1005,35 @@ if(NEW_DATASET):
     loaded_model = pickle.load(open(filename, 'rb'))
     result = loaded_model.score(X, y)
     print("Result from loading model:", result)
+
+    pred = np.asarray(loaded_model.predict_proba(X))
+
+    pred = pred[range(len(pred)), y]
+
+    fpr, tpr, thresholds = metrics.roc_curve(y, pred, pos_label=0) 
+    auc = metrics.auc(fpr, tpr)
+    # plot the roc curve for the model
+    plt.figure()
+    plt.plot(fpr, tpr, linestyle='--', label='AUC = ' + str(auc))
+    # axis labels
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    # show the legend
+    plt.legend()
+
+    plt.savefig(str(tol) + '/' + str(trimming) + '-roc_auc-0.png')
+
+    fpr, tpr, thresholds = metrics.roc_curve(y, pred, pos_label=1) 
+    auc = metrics.auc(fpr, tpr)
+    # plot the roc curve for the model
+    plt.figure()
+    plt.plot(fpr, tpr, linestyle='--', label='AUC = ' + str(auc))
+    # axis labels
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    # show the legend
+    plt.legend()
+    plt.savefig(str(tol) + '/' + str(trimming) + '-roc_auc-1.png')
 else:
     np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)})
 
@@ -1076,11 +1073,11 @@ else:
     # This CV is done to estimate the performance of the algorithm on unseen data and also get rid of the bias introduced 
     # by the GridSearch. Therefore, if the results are good, we can run the GridSearch again and fixate the hyperparameters.
     #scores = cross_val_score(clf, X, y, cv=NUM_CV, scoring=my_scoring)
-    #print("This model can differentiate harvesters (0) from collaborators (1) with an accuracy and standard deviation of, respectively: %0.3f (+/- %0.3f)" % (scores.mean() * 100, scores.std() * 200))
+    #print_verb("This model can differentiate harvesters (0) from collaborators (1) with an accuracy and standard deviation of, respectively: %0.3f (+/- %0.3f)" % (scores.mean() * 100, scores.std() * 200))
 
     # save the model to disk
     clf.fit(X, y)
-    print(clf)
+    print_verb(clf)
     pickle.dump(clf.best_estimator_, open(filename, 'wb'))
 
 # In[423]:
@@ -1098,7 +1095,7 @@ df_X.fillna('', inplace=True)
 # In[424]:
 
 
-print(np.shape(df_results), np.shape(df_X))
+print_verb(np.shape(df_results), np.shape(df_X))
 
 
 # In[425]:
@@ -1206,9 +1203,9 @@ shifting_count = [np.unique(j, return_counts=True) for j in labels_per_user]
 
 
 for user, shifts in zip(unique_users, shifting_count):
-    #print(shifts[1])
+    #print_verb(shifts[1])
     if len(shifts[1]) > 1:
-        print(user, len(shifts[1]))
+        print_verb(user, len(shifts[1]))
 
 
 # In[434]:

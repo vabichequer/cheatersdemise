@@ -17,5 +17,4 @@ def computeTimeDifferences(time_difference, selected_users, exercise_array_1, ex
 
 
         time_difference.append(td_temp)
-    print(version, 'finished.')
     return

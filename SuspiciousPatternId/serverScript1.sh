@@ -5,4 +5,4 @@
 #
 #SBATCH --cpus-per-task=1
 
-python3 MainCD.py 1 1 0 0 1
+python3 MainCD.py 1 0 1 0 1 10

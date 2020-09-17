@@ -35,6 +35,14 @@ else:
     scores_csv = pd.read_csv("UAMx_Android301x_1T2015_grade_report_2015-04-21-1145_sanitized.csv")
     dataset_prefix = 'original_data/'
 
+if (TIME_LIMIT):
+    time_lim_str = 'time_limited_'
+    time_lim = 1427241600 # 1 month, from february 25th to march 25th
+    #1429920000 2 months, from february 25th to april 25th
+else:
+    time_lim_str = ''
+    time_lim = sys.maxsize
+
 
 N_USERS = len(df.Usuario)
 
@@ -68,13 +76,13 @@ for i in range(1, len(df.Usuario)):
 print_verb("Finished logging scores.")
 print_verb("Logging exercises...")
 
-exercise_dump_exists = os.path.isfile(dataset_prefix + 'correct_exercises.npy')
+exercise_dump_exists = os.path.isfile(dataset_prefix + time_lim_str + '_correct_exercises.npy')
 
 if (exercise_dump_exists and not REWRITE_DUMPS):
-    correctExercises = np.load(dataset_prefix + 'correct_exercises.npy', allow_pickle=True)
-    correctExercisesCount = np.load(dataset_prefix + 'correct_exercises_count.npy', allow_pickle=True)
-    wrongExercises = np.load(dataset_prefix + 'wrong_exercises.npy', allow_pickle=True)
-    wrongExercisesCount = np.load(dataset_prefix + 'wrong_exercises_count.npy', allow_pickle=True)
+    correctExercises = np.load(dataset_prefix + time_lim_str + 'correct_exercises.npy', allow_pickle=True)
+    correctExercisesCount = np.load(dataset_prefix + time_lim_str + 'correct_exercises_count.npy', allow_pickle=True)
+    wrongExercises = np.load(dataset_prefix + time_lim_str + 'wrong_exercises.npy', allow_pickle=True)
+    wrongExercisesCount = np.load(dataset_prefix + time_lim_str + 'wrong_exercises_count.npy', allow_pickle=True)
 else:
     # create the exercise list
     correctExercises = np.empty((N_USERS, N_EXERCISES))
@@ -89,11 +97,6 @@ else:
     wrongExercisesCount = np.empty(N_USERS)
     wrongExercisesCount.fill(0)
 
-    if (TIME_LIMIT):
-        time_lim = 1428105600000 #1 month, from march to april
-    else:
-        time_lim = sys.maxint
-
     for i in range(0, len(df.Usuario)):
         for j in range(0, len(df.Eventos[i])):
             if (df.Eventos[i][j]['evento'] == 'problem_check'):
@@ -104,7 +107,6 @@ else:
                     time_split = df.Eventos[i][j]['tiempo'].split('T')
                     time_tuple = time.strptime(time_split[0] + ' ' + time_split[1][:8], date_format)
                     time_epoch = time.mktime(time_tuple)   
-                    #print_verb(time_epoch)
                     if (time_epoch < time_lim):
                         if(df.Eventos[i][j]['resultados'][0]['correcto'] == 'True'):
                             #print_verb('\t \t \t right')
@@ -118,10 +120,10 @@ else:
         #clear()
         #print_verb('Exercises:', math.ceil(i*100/N_USERS), '% done')
 
-    np.save(dataset_prefix + 'correct_exercises.npy', correctExercises, allow_pickle=True)
-    np.save(dataset_prefix + 'correct_exercises_count.npy', correctExercisesCount, allow_pickle=True)
-    np.save(dataset_prefix + 'wrong_exercises.npy', wrongExercises, allow_pickle=True)
-    np.save(dataset_prefix + 'wrong_exercises_count.npy', wrongExercisesCount, allow_pickle=True)
+    np.save(dataset_prefix + time_lim_str + 'correct_exercises.npy', correctExercises, allow_pickle=True)
+    np.save(dataset_prefix + time_lim_str + 'correct_exercises_count.npy', correctExercisesCount, allow_pickle=True)
+    np.save(dataset_prefix + time_lim_str + 'wrong_exercises.npy', wrongExercises, allow_pickle=True)
+    np.save(dataset_prefix + time_lim_str + 'wrong_exercises_count.npy', wrongExercisesCount, allow_pickle=True)
 
 print_verb('Ended logging.')
 
@@ -161,10 +163,10 @@ N_USERS = len(df.Usuario)
 correctExercises_minutes = correctExercises / 60
 wrongExercises_minutes = wrongExercises / 60
 
-dump_exists = os.path.isfile(dataset_prefix + str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv')
+dump_exists = os.path.isfile(dataset_prefix + str(tol) + '/' + time_lim_str + str(tol) + '-' + str(MIN_EXERCISES) + '.csv')
 
 if (dump_exists and not REWRITE_DUMPS):
-    df_all_selected_users = pd.read_csv(dataset_prefix + str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv', index_col=0)
+    df_all_selected_users = pd.read_csv(dataset_prefix + str(tol) + '/' + time_lim_str + str(tol) + '-' + str(MIN_EXERCISES) + '.csv', index_col=0)
     df_all_selected_users.fillna('', inplace=True)
 
     selected_users_CC = literal_eval(df_all_selected_users.loc[0][0])
@@ -200,7 +202,7 @@ else:
         p_XX.join()
 
         df_all_selected_users = pd.DataFrame([selected_users_CC, selected_users_XC, selected_users_CX, selected_users_XX])
-        df_all_selected_users.to_csv(dataset_prefix + str(tol) + '/' + str(tol) + '-' + str(MIN_EXERCISES) + '.csv')
+        df_all_selected_users.to_csv(dataset_prefix + str(tol) + '/' + time_lim_str + str(tol) + '-' + str(MIN_EXERCISES) + '.csv')
 
         print_verb("Data stored.")
 
@@ -313,6 +315,22 @@ print_verb(label[3], len(all_selected_users[3]), '||', len(selected_users_XX))
 
 # In[392]:
 
+exercisePopularity = np.empty(N_EXERCISES)
+exercisePopularity.fill(0)
+
+for i in range(0, all_time_differences):
+    temp = countExercisePopularity(all_time_differences[i], tol)
+    exercisePopularity += temp
+
+plt.figure(figsize=(15, 10))
+plt.hist(exercisePopularity, bins=np.arange(N_EXERCISES + 1.5, ec='black'))
+plt.xticks(np.arange(N_EXERCISES + 1), rotation=90)
+plt.xlim([-1, N_EXERCISES + 1])
+plt.ylabel("Amount of copies", fontsize=20)
+plt.xlabel("Exercises", fontsize=20)
+plt.savefig(str(tol) + '/' + str(trimming) + '-popularity.png')
+
+sys.exit()
 
 type_array = type_separation(all_selected_users, all_time_differences, tol)
 print_verb('Finished')
@@ -449,7 +467,7 @@ plt.xticks(fontsize=20)
 
 plt.grid(color='grey', linestyle='--', linewidth=.5)
 
-plt.savefig(dataset_prefix + str(tol) + '/' + str(trimming) + '-amount_of_exercises.png', bbox_inches='tight')
+plt.savefig(dataset_prefix + str(tol) + '/' + time_lim_str + str(trimming) + '-amount_of_exercises.png', bbox_inches='tight')
 
 #plt.show()
 
@@ -470,7 +488,7 @@ np.savetxt("exercise_dump.txt", total_exercises_under_tol)
 
 print_verb("Plotted.")
 
-np.save(dataset_prefix + str(tol) + '/' + str(tol) + '-teut.npy', total_exercises_under_tol, allow_pickle=True)
+np.save(dataset_prefix + str(tol) + '/' + time_lim_str + str(tol) + '-teut.npy', total_exercises_under_tol, allow_pickle=True)
 
 #sys.exit()
 
@@ -515,7 +533,7 @@ axes.set_ylim([-1.1, 1.1])
 
 plt.grid(color='grey', linestyle='--', linewidth=.5)
 
-plt.savefig(dataset_prefix + str(tol) + '/' + str(trimming) + '-distance_from_curve.png')
+plt.savefig(dataset_prefix + str(tol) + '/' + time_lim_str + str(trimming) + '-distance_from_curve.png')
 
 #plt.show()
 
@@ -595,19 +613,19 @@ plt.yticks(fontsize=20)
 
 plt.grid(color='grey', linestyle='--', linewidth=.5)
 
-plt.savefig(dataset_prefix + str(tol) + '/' + str(trimming) + '-hypotheses.png', bbox_inches='tight')
+plt.savefig(dataset_prefix + str(tol) + '/' + time_lim_str + str(trimming) + '-hypotheses.png', bbox_inches='tight')
 
 #plt.show()
 
 print_verb("Checking IPs...")
 
-ip_dump_exists = os.path.isfile(dataset_prefix + str(tol) + 'ip_addrs.npy')
+ip_dump_exists = os.path.isfile(dataset_prefix + str(tol) + '/' + time_lim_str + 'ip_addrs.npy')
 
 if (ip_dump_exists and not REWRITE_DUMPS):
-    ip_addrs = np.load(dataset_prefix + str(tol) + 'ip_addrs.npy', allow_pickle=True)
+    ip_addrs = np.load(dataset_prefix + str(tol) + '/' + time_lim_str + 'ip_addrs.npy', allow_pickle=True)
 else:    
     ip_addrs = check_ip_addresses(array_being_analysed, df)
-    np.save(dataset_prefix + str(tol) + 'ip_addrs.npy', ip_addrs, allow_pickle=True)
+    np.save(dataset_prefix + str(tol) + '/' + time_lim_str + 'ip_addrs.npy', ip_addrs, allow_pickle=True)
 
 print_verb("Done.")
 
@@ -658,7 +676,7 @@ plt.xticks(fontsize=20)
 
 plt.grid(color='grey', linestyle='--', linewidth=.5)
 
-plt.savefig(dataset_prefix + str(tol) + '/' + str(trimming) + '-exercises_same_ip-' + FLAG + '.png')
+plt.savefig(dataset_prefix + str(tol) + '/' + time_lim_str + str(trimming) + '-exercises_same_ip-' + FLAG + '.png')
 
 #plt.show()
 
@@ -724,7 +742,7 @@ plt.xticks(fontsize=20)
 
 plt.grid(color='grey', linestyle='--', linewidth=.5)
 
-plt.savefig(dataset_prefix + str(tol) + '/' + str(trimming) + '-material_usage_index-' + FLAG + '.png', bbox_inches='tight')
+plt.savefig(dataset_prefix + str(tol) + '/' + time_lim_str + str(trimming) + '-material_usage_index-' + FLAG + '.png', bbox_inches='tight')
 
 #plt.show()
 
@@ -794,67 +812,6 @@ while i < len(user_pairs_copy):
                 i = i + 1
                 break
 
-""" node_colors = {}
-
-for i in range(0, len(material_usage)):           
-    user_1 = int(user_pairs_copy[i][0])
-    user_2 = int(user_pairs_copy[i][1])
-    if (material_usage[i][0] == 0):
-        node_colors[user_1] = 'red'
-    else:
-        node_colors[user_1] = 'blue'
-    if (material_usage[i][1] == 0):
-        node_colors[user_2] = 'red'
-    else:
-        node_colors[user_2] = 'blue'
-
-node_color_array = []
-
-labels = {}
-
-for i in range(0, len(user_pairs_copy)):
-    user_1 = int(user_pairs_copy[i][0])
-    user_2 = int(user_pairs_copy[i][1])
-    G.add_node(user_1)
-    G.add_node(user_2)
-
-    temp = abs(round(user_bias_array[i], 2))
-
-    if (user_bias_array[i] >= 0):
-        G.add_edge(user_1, user_2, width=temp * 10)
-        labels[user_1, user_2] = str(temp) + str(labels_ip[i])
-    else:
-        G.add_edge(user_2, user_1, width=temp * 10)
-        labels[user_2, user_1] = str(temp) + str(labels_ip[i])
-
-for node in G:
-    node_color_array.append(node_colors[node])
-
-pos = nx.nx_agraph.graphviz_layout(G, prog='dot', args="-Gnodesep=5")
-
-
-# # Plot connection graph
-
-plt.close('all')
-
-plt.figure(figsize=(50, 50))
-
-width = [G[u][v]['width'] for u,v in G.edges()]      
-
-nx.draw(G, pos, node_color=node_color_array)
-
-nx.draw_networkx_edges(G, pos, width=width)
-
-nx.draw_networkx_labels(G, pos, font_size=10)
-
-text = nx.draw_networkx_edge_labels(G, pos, edge_labels=labels, font_color='red')
-
-for _,t in text.items():
-    t.set_rotation('vertical')
-
-plt.savefig(str(tol) + '/' + str(trimming) + '-connection-graph' + '.png')
-"""
-
 temp = []
 
 for i, txt in enumerate(analysing_data):
@@ -872,11 +829,6 @@ for i in range(0, len(ip_addrs_temp)):
         for k in range(0, len(user_2_ips)):
             if (user_1_ips[j] == user_2_ips[k]):
                 amount = amount + 1
-    #print_verb('Total:', len(user_1_ips), len(user_2_ips), amount)
-    #print_verb('-'*100)
-    #print_verb('User 1 (', array_being_analysed[i][2], ',', len(user_1_ips), '): ', user_1_ips, count_1)
-    #print_verb('User 2 (', array_being_analysed[i][3], ',', len(user_2_ips), '): ', user_2_ips, count_2)
-    #print_verb('\nCorrelation: ', amount, np.intersect1d(user_1_ips, user_2_ips, assume_unique=True))
     total = len(user_1_ips) + len(user_2_ips)
     ips_in_common_temp.append(amount / (total - amount))
 
@@ -902,8 +854,6 @@ MIR = np.asarray(MIR)
 
 dict_var = {'CC':CC, 'XC':XC, 'User Bias':UB, 'Minimal MIR':MIR, 'Score Diff':ScoreDif, 
             'IPs in common':IPs}
-#dict_var = {'CC':CC, 'XX':XX, 'User Bias':UB, 'Minimal MIR':MIR, 'Score Diff':ScoreDif, 
-#            'IPs in common':IPs}
 
 for key, value in dict_var.items():
     print_verb(key, len(value), value.shape)
@@ -924,11 +874,25 @@ scaled_x = pd.DataFrame(scaled_x, columns=names)
 # # Clustering
 
 if (TIME_LIMIT):
-    full_data_df = pd.read_pickle('final_df-' + str(tol) + '.pkl')
-    idxs = x.index
-    y = full_data_df.loc[idxs]['Labels']
-    x['Labels'] = y
-
+    all_c_and_h = pd.read_pickle(dataset_prefix + 'final_df-' + str(tol) + '.pkl')
+    some_c_and_h = all_c_and_h.index.intersection(x.index)
+    innocent = x.index.difference(some_c_and_h)
+    print(x.index)
+    print('-'*25)
+    print(all_c_and_h.index)
+    print('-'*25)
+    print(some_c_and_h)
+    if (some_c_and_h == []):
+        print("No suspicious user found. Terminating...")
+        sys.exit()
+    print('-'*25)
+    print(innocent)
+    x['Labels'] = 0
+    x.loc[some_c_and_h]['Labels'] = all_c_and_h.loc[some_c_and_h]['Labels']
+    x.loc[innocent]['Labels'] = 2
+    y = x['Labels']
+    x.to_pickle(dataset_prefix + 'final_df_with_innocents-' + str(tol) + '.pkl')
+    sys.exit()
 else:
     from sklearn.cluster import KMeans
 
@@ -945,21 +909,23 @@ else:
 
     x['Labels'] = y
 
-    x.to_pickle('final_df-' + str(tol) + '.pkl')
+    x.to_pickle(dataset_prefix + 'final_df-' + str(tol) + '.pkl')
     sys.exit()
 
 harvester = len(y[y == 0]) 
-collaboration = len(y[y == 1]) 
+collaborator = len(y[y == 1]) 
+innocent = len(y[y == 2]) 
 
-print_verb('In this dataset, there are', harvester, 'harvester type copies and', collaboration, 'collaboration type copies.')
+print_verb('In this dataset, there are', harvester, 'harvester type copies,', collaborator, 'collaboration type copies and', innocent, 'innocent users.')
 
 
 # ## Supervised learning
 
-print_verb("There are", collaboration, "1's and", collaboration, "0's as labels.")
-prop_1 = collaboration / len(y)
+print_verb("There are", collaborator, "1's", harvester, "0's as labels and", innocent, "2's as labels")
+prop_2 = innocent / len(y)
+prop_1 = collaborator / len(y)
 prop_0 = harvester / len(y)
-print("The proportion of 1's and 0's is, repectively:", prop_1, prop_0)
+print("The proportion of 2's, 1's and 0's is, repectively:", prop_2, prop_1, prop_0)
 
 from sklearn import svm
 from sklearn.model_selection import GridSearchCV
@@ -967,6 +933,7 @@ from sklearn.model_selection import GridSearchCV
 class_weights = {}
 class_weights[0] = prop_0
 class_weights[1] = prop_1
+class_weights[2] = prop_2
 
 print_verb(class_weights)
 
@@ -1072,8 +1039,8 @@ else:
 
     # This CV is done to estimate the performance of the algorithm on unseen data and also get rid of the bias introduced 
     # by the GridSearch. Therefore, if the results are good, we can run the GridSearch again and fixate the hyperparameters.
-    #scores = cross_val_score(clf, X, y, cv=NUM_CV, scoring=my_scoring)
-    #print_verb("This model can differentiate harvesters (0) from collaborators (1) with an accuracy and standard deviation of, respectively: %0.3f (+/- %0.3f)" % (scores.mean() * 100, scores.std() * 200))
+    scores = cross_val_score(clf, X, y, cv=NUM_CV, scoring=my_scoring)
+    print_verb("This model can differentiate harvesters (0) from collaborators (1) with an accuracy and standard deviation of, respectively: %0.3f (+/- %0.3f)" % (scores.mean() * 100, scores.std() * 200))
 
     # save the model to disk
     clf.fit(X, y)

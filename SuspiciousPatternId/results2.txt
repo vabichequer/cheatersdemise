@@ -1,1 +1,90 @@
 Code started. Time window of:  2
+XC added. 137 is user 1, 2306 is user 2. 32 exercises. 2 minutes tolerance
+XC added. 171 is user 1, 1155 is user 2. 10 exercises. 2 minutes tolerance
+XC added. 395 is user 1, 2673 is user 2. 27 exercises. 2 minutes tolerance
+XC added. 591 is user 1, 1208 is user 2. 62 exercises. 2 minutes tolerance
+XC added. 629 is user 1, 836 is user 2. 17 exercises. 2 minutes tolerance
+XC added. 629 is user 1, 2989 is user 2. 14 exercises. 2 minutes tolerance
+XC added. 912 is user 1, 2963 is user 2. 17 exercises. 2 minutes tolerance
+XC added. 1957 is user 1, 2180 is user 2. 21 exercises. 2 minutes tolerance
+XC thread finished. XC added 8 users.
+/lustre/home/vinte/cheatersdemise/SuspiciousPatternId/Definitions.py:118: RuntimeWarning: invalid value encountered in less_equal
+  time_dif = time_dif[time_dif <= 0]
+CX added. 347 is user 1, 1057 is user 2. 13 exercises. 2 minutes tolerance
+CX added. 598 is user 1, 602 is user 2. 18 exercises. 2 minutes tolerance
+CX added. 640 is user 1, 1262 is user 2. 30 exercises. 2 minutes tolerance
+CX added. 703 is user 1, 1167 is user 2. 43 exercises. 2 minutes tolerance
+CX added. 830 is user 1, 1057 is user 2. 12 exercises. 2 minutes tolerance
+CX added. 912 is user 1, 2963 is user 2. 13 exercises. 2 minutes tolerance
+CX added. 913 is user 1, 2524 is user 2. 10 exercises. 2 minutes tolerance
+CX added. 1141 is user 1, 1564 is user 2. 28 exercises. 2 minutes tolerance
+CX added. 1620 is user 1, 2734 is user 2. 15 exercises. 2 minutes tolerance
+CX added. 1789 is user 1, 2995 is user 2. 22 exercises. 2 minutes tolerance
+CX added. 1846 is user 1, 2229 is user 2. 52 exercises. 2 minutes tolerance
+CX thread finished. CX added 11 users.
+/lustre/home/vinte/cheatersdemise/SuspiciousPatternId/Definitions.py:120: RuntimeWarning: invalid value encountered in greater_equal
+  time_dif = time_dif[time_dif >= 0]
+XX added. 611 is user 1, 629 is user 2. 14 exercises. 2 minutes tolerance
+XX added. 912 is user 1, 2963 is user 2. 10 exercises. 2 minutes tolerance
+XX thread finished. XX added 2 users.
+CC added. 2 is user 1, 1862 is user 2. 33 exercises. 2 minutes tolerance
+CC added. 110 is user 1, 514 is user 2. 13 exercises. 2 minutes tolerance
+CC added. 110 is user 1, 830 is user 2. 22 exercises. 2 minutes tolerance
+CC added. 110 is user 1, 2972 is user 2. 19 exercises. 2 minutes tolerance
+CC added. 113 is user 1, 3003 is user 2. 12 exercises. 2 minutes tolerance
+CC added. 137 is user 1, 2306 is user 2. 21 exercises. 2 minutes tolerance
+CC added. 175 is user 1, 2170 is user 2. 10 exercises. 2 minutes tolerance
+CC added. 280 is user 1, 1513 is user 2. 28 exercises. 2 minutes tolerance
+CC added. 280 is user 1, 2831 is user 2. 26 exercises. 2 minutes tolerance
+CC added. 301 is user 1, 509 is user 2. 33 exercises. 2 minutes tolerance
+CC added. 347 is user 1, 830 is user 2. 12 exercises. 2 minutes tolerance
+CC added. 398 is user 1, 2326 is user 2. 10 exercises. 2 minutes tolerance
+CC added. 514 is user 1, 2972 is user 2. 20 exercises. 2 minutes tolerance
+CC added. 556 is user 1, 1874 is user 2. 11 exercises. 2 minutes tolerance
+CC added. 591 is user 1, 1208 is user 2. 16 exercises. 2 minutes tolerance
+CC added. 598 is user 1, 602 is user 2. 22 exercises. 2 minutes tolerance
+CC added. 609 is user 1, 1581 is user 2. 25 exercises. 2 minutes tolerance
+CC added. 611 is user 1, 629 is user 2. 49 exercises. 2 minutes tolerance
+CC added. 629 is user 1, 836 is user 2. 13 exercises. 2 minutes tolerance
+CC added. 629 is user 1, 2989 is user 2. 13 exercises. 2 minutes tolerance
+CC added. 640 is user 1, 1262 is user 2. 15 exercises. 2 minutes tolerance
+CC added. 640 is user 1, 1661 is user 2. 12 exercises. 2 minutes tolerance
+CC added. 703 is user 1, 1167 is user 2. 23 exercises. 2 minutes tolerance
+CC added. 707 is user 1, 2537 is user 2. 11 exercises. 2 minutes tolerance
+CC added. 830 is user 1, 1057 is user 2. 15 exercises. 2 minutes tolerance
+CC added. 836 is user 1, 2989 is user 2. 38 exercises. 2 minutes tolerance
+CC added. 856 is user 1, 3003 is user 2. 10 exercises. 2 minutes tolerance
+CC added. 904 is user 1, 1661 is user 2. 10 exercises. 2 minutes tolerance
+CC added. 912 is user 1, 2963 is user 2. 34 exercises. 2 minutes tolerance
+CC added. 913 is user 1, 1925 is user 2. 10 exercises. 2 minutes tolerance
+CC added. 962 is user 1, 2802 is user 2. 32 exercises. 2 minutes tolerance
+CC added. 1044 is user 1, 2181 is user 2. 12 exercises. 2 minutes tolerance
+CC added. 1105 is user 1, 1495 is user 2. 10 exercises. 2 minutes tolerance
+CC added. 1141 is user 1, 1564 is user 2. 23 exercises. 2 minutes tolerance
+CC added. 1219 is user 1, 2322 is user 2. 11 exercises. 2 minutes tolerance
+CC added. 1246 is user 1, 1430 is user 2. 11 exercises. 2 minutes tolerance
+CC added. 1300 is user 1, 1896 is user 2. 10 exercises. 2 minutes tolerance
+CC added. 1344 is user 1, 2047 is user 2. 18 exercises. 2 minutes tolerance
+CC added. 1384 is user 1, 1875 is user 2. 10 exercises. 2 minutes tolerance
+CC added. 1513 is user 1, 2831 is user 2. 16 exercises. 2 minutes tolerance
+CC added. 1530 is user 1, 1719 is user 2. 13 exercises. 2 minutes tolerance
+CC added. 1535 is user 1, 1651 is user 2. 11 exercises. 2 minutes tolerance
+CC added. 1573 is user 1, 1696 is user 2. 10 exercises. 2 minutes tolerance
+CC added. 1661 is user 1, 2989 is user 2. 17 exercises. 2 minutes tolerance
+CC added. 1686 is user 1, 2954 is user 2. 11 exercises. 2 minutes tolerance
+CC added. 1757 is user 1, 2260 is user 2. 11 exercises. 2 minutes tolerance
+CC added. 1789 is user 1, 2995 is user 2. 16 exercises. 2 minutes tolerance
+CC added. 1791 is user 1, 2082 is user 2. 10 exercises. 2 minutes tolerance
+CC added. 1846 is user 1, 2229 is user 2. 24 exercises. 2 minutes tolerance
+CC added. 1868 is user 1, 2370 is user 2. 10 exercises. 2 minutes tolerance
+CC added. 1917 is user 1, 2934 is user 2. 10 exercises. 2 minutes tolerance
+CC added. 1979 is user 1, 2599 is user 2. 10 exercises. 2 minutes tolerance
+CC added. 1999 is user 1, 2749 is user 2. 11 exercises. 2 minutes tolerance
+CC added. 2019 is user 1, 2728 is user 2. 10 exercises. 2 minutes tolerance
+CC added. 2214 is user 1, 2237 is user 2. 11 exercises. 2 minutes tolerance
+CC added. 2721 is user 1, 2807 is user 2. 12 exercises. 2 minutes tolerance
+CC thread finished. CC added 56 users.
+Traceback (most recent call last):
+  File "MainCD.py", line 321, in <module>
+    for i in range(0, all_time_differences):
+TypeError: 'list' object cannot be interpreted as an integer

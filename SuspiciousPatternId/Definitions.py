@@ -26,7 +26,7 @@ from ast import literal_eval
 
 def print_verb(*args, **kwargs):
     if (VERBOSE):
-        __builtin__.print(*args, **kwargs)
+        print(*args, **kwargs)
     return 
 
 ## Constants
@@ -42,9 +42,6 @@ date_format = '%Y-%m-%d %H:%M:%S'
 
 # number of exercises
 N_EXERCISES = 196
-
-# Minimum number of exercises
-MIN_EXERCISES = 10
 
 # Time tolerance for exercises
 try:
@@ -71,6 +68,14 @@ try:
     TIME_LIMIT = int(sys.argv[5])
 except:
     sys.exit("Missing time limit argument (0 or 1). Exiting...")
+
+try:
+    MIN_EXERCISES = int(sys.argv[6])
+except:
+    sys.exit("Missing minimum exercises argument (usually 10). Exiting...")
+
+# Minimum number of exercises
+
 
 trimming = tol #math.inf
 
@@ -220,6 +225,17 @@ def return_users(pair):
     user_2 = pair[1]
     
     return user_1, user_2
+
+def countExercisePopularity(time_diff, tol):
+    exercisePopularity = np.empty(N_EXERCISES)
+    exercisePopularity.fill(0)
+
+    for i in range(0, len(time_diff)):
+        for j in range(0, N_EXERCISES):
+            if (time_dif[i][j] < tol):
+                exercisePopularity[j] += 1
+
+    return exercisePopularity
 
 def type_separation(all_user_pairs, all_time_differences, tol):
     type_array = []
